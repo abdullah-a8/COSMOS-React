@@ -1,0 +1,9 @@
+[server]
+# Enable static file serving
+enableStaticServing = false
+
+# Automatically refresh the app when changes are detected
+runOnSave = true
+
+[runner]
+fastReruns = true

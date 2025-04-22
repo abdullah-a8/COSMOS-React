@@ -1,0 +1,176 @@
+# Python standard ignores
+__pycache__/
+*.py[cod]
+*$py.class
+# Include specific .so files needed for the package
+*.so
+!core/cpp_modules/*.so
+.Python
+build/
+cpp_extensions/build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# C++ build artifacts
+*.o
+*.a
+*.out
+*.dll
+*.dylib
+*.exe
+compile_commands.json
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*ipynb
+Exxperiment.ipynb
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE specific files
+.idea/
+.vscode/
+*.swp
+*.swo
+.spyderproject
+.spyproject
+.ropeproject
+*.sublime-workspace
+*.sublime-project
+.pyre/
+.pytype/
+pyrightconfig.json
+
+# Project specific ignores
+# Credentials and tokens
+credentials/*
+!credentials/.gitkeep
+*.token.json
+*.credentials.json
+
+# API keys and environment variables
+.env
+.env.*
+!.env.example
+
+# Pinecone and vector database related
+vector_db/
+**/pinecone_data/
+
+# Large data files
+*.csv
+*.xlsx
+*.parquet
+*.json
+!package.json
+!tsconfig.json
+!package-lock.json
+!pnpm-lock.yaml
+!tsconfig.node.json
+!.streamlit/config.toml
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Temporary files
+.~*
+*~
+*.bak
+*.tmp
+cython_debug/
+
+# Mac OS specific
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+
+# Windows specific
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msm
+*.msp
+
+# Node.js / Frontend
+node_modules/
+dist/
+dist-ssr/
+frontend/build/
+.vercel
+*.local
+
+# TypeScript
+*.tsbuildinfo
+
+# Local development
+TODO.md
+NOTES.md
+README2.md
+*.local
+
+!frontend/src/hooks/
+!frontend/src/lib/
+!frontend/src/components/
+frontend/.env
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+frontend/coverage/
