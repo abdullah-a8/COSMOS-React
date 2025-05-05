@@ -264,8 +264,8 @@ export function useRagChatbot(chunkSize: number, chunkOverlap: number) {
         const model = selectedModels[0];
         
         try {
-          // Add placeholder assistant message that will be updated incrementally
-          setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+          // Don't add an empty placeholder message initially
+          // We'll add the assistant message once we receive the first chunk
           
           // Fetch the streaming response
           const response = await fetch(`${API_BASE}/rag/query/stream`, {
@@ -294,6 +294,7 @@ export function useRagChatbot(chunkSize: number, chunkOverlap: number) {
           const reader = response.body.getReader();
           const decoder = new TextDecoder();
           let accumulatedResponse = '';
+          let isFirstChunk = true;
 
           // Process the stream chunks
           while (true) {
@@ -307,17 +308,27 @@ export function useRagChatbot(chunkSize: number, chunkOverlap: number) {
             const chunk = decoder.decode(value, { stream: true });
             accumulatedResponse += chunk;
             
-            // Update the last message (the assistant response)
-            setMessages(prev => {
-              const updatedMessages = [...prev];
-              if (updatedMessages.length > 0) {
-                updatedMessages[updatedMessages.length - 1] = {
-                  role: 'assistant',
-                  content: `**${model}**:\n${accumulatedResponse}`
-                };
-              }
-              return updatedMessages;
-            });
+            // For the first chunk, add a new assistant message
+            // For subsequent chunks, update the existing message
+            if (isFirstChunk) {
+              setMessages(prev => [...prev, {
+                role: 'assistant',
+                content: `**${model}**:\n${accumulatedResponse}`
+              }]);
+              isFirstChunk = false;
+            } else {
+              // Update the last message (the assistant response)
+              setMessages(prev => {
+                const updatedMessages = [...prev];
+                if (updatedMessages.length > 0) {
+                  updatedMessages[updatedMessages.length - 1] = {
+                    role: 'assistant',
+                    content: `**${model}**:\n${accumulatedResponse}`
+                  };
+                }
+                return updatedMessages;
+              });
+            }
           }
 
           // Add performance note if in development mode
@@ -325,10 +336,12 @@ export function useRagChatbot(chunkSize: number, chunkOverlap: number) {
             setMessages(prev => {
               const updatedMessages = [...prev];
               if (updatedMessages.length > 0) {
-                // Add the note about streaming being used
+                // Add the note about streaming being used only if it's not already there
                 const lastContent = updatedMessages[updatedMessages.length - 1].content;
-                updatedMessages[updatedMessages.length - 1].content = 
-                  `${lastContent}\n\n_Response delivered via streaming_`;
+                if (!lastContent.includes('_Response delivered via streaming_')) {
+                  updatedMessages[updatedMessages.length - 1].content = 
+                    `${lastContent}\n\n_Response delivered via streaming_`;
+                }
               }
               return updatedMessages;
             });
