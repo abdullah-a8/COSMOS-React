@@ -1,1 +1,1 @@
-web: uvicorn api.app.main:app --host 0.0.0.0 --port $PORT
+web: sh -c "uvicorn api.app.main:app --host 127.0.0.1 --port $PORT & bin/heroku-php-nginx -C config/nginx.conf.erb"
