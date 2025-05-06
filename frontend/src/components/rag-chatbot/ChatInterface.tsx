@@ -1,10 +1,12 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Send, Settings, FileText, Link as LinkIcon, Video, Loader2, MessageSquare, Image } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { motion, AnimatePresence } from 'framer-motion';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
+import type { Components } from 'react-markdown';
+import LaTeXErrorBoundary from './LaTeXErrorBoundary';
 
 interface Message {
   role: 'user' | 'assistant' | 'system';
@@ -38,10 +40,16 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [input, setInput] = useState('');
   const [filtersOpen, setFiltersOpen] = useState(false);
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
+  const [renderError, setRenderError] = useState<string | null>(null);
 
   // Scroll to bottom on new messages
   useEffect(() => {
     endOfMessagesRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  // Reset render error when messages change
+  useEffect(() => {
+    setRenderError(null);
   }, [messages]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -57,6 +65,27 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       ...sourceFilters,
       [key]: !sourceFilters[key],
     });
+  };
+
+  // Safe LaTeX rendering with error handling
+  const handleRenderError = useCallback((error: Error) => {
+    console.error('KaTeX rendering error:', error);
+    setRenderError('There was an error rendering LaTeX content. The interface will remain functional.');
+  }, []);
+
+  // Custom components for markdown rendering including LaTeX
+  const markdownComponents: Components = {
+    p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+    ul: ({ children }) => <ul className="list-disc pl-5 mb-2">{children}</ul>,
+    ol: ({ children }) => <ol className="list-decimal pl-5 mb-2">{children}</ol>,
+    li: ({ children }) => <li className="mb-1">{children}</li>,
+    a: ({ href, children }) => (
+      <a href={href} target="_blank" rel="noopener noreferrer" className="text-purple-300 underline">
+        {children}
+      </a>
+    ),
+    code: ({ children }) => <code className="bg-black/40 px-1 py-0.5 rounded">{children}</code>,
+    strong: ({ children }) => <strong className="font-semibold text-purple-300">{children}</strong>,
   };
 
   return (
@@ -158,6 +187,17 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       {/* Chat Messages */}
       <div className="h-96 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-purple-600/50 scrollbar-track-transparent">
+        {renderError && (
+          <div className="bg-red-900/30 border border-red-500/30 text-white p-2 rounded text-xs mb-2">
+            {renderError}
+            <button 
+              className="ml-2 text-red-300 hover:text-red-100" 
+              onClick={() => setRenderError(null)}
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
         {messages.map((message, index) => (
           <motion.div
             key={index}
@@ -178,27 +218,17 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               animate={{ scale: 1 }}
               transition={{ duration: 0.2 }}
             >
-              <div className="prose prose-invert prose-sm max-w-none">
-                <ReactMarkdown
-                  remarkPlugins={[remarkMath]}
-                  rehypePlugins={[rehypeKatex]}
-                  components={{
-                    p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-                    ul: ({ children }) => <ul className="list-disc pl-5 mb-2">{children}</ul>,
-                    ol: ({ children }) => <ol className="list-decimal pl-5 mb-2">{children}</ol>,
-                    li: ({ children }) => <li className="mb-1">{children}</li>,
-                    a: ({ href, children }) => (
-                      <a href={href} target="_blank" rel="noopener noreferrer" className="text-purple-300 underline">
-                        {children}
-                      </a>
-                    ),
-                    code: ({ children }) => <code className="bg-black/40 px-1 py-0.5 rounded">{children}</code>,
-                    strong: ({ children }) => <strong className="font-semibold text-purple-300">{children}</strong>,
-                  }}
-                >
-                  {message.content}
-                </ReactMarkdown>
-              </div>
+              <LaTeXErrorBoundary onError={handleRenderError}>
+                <div className="prose prose-invert prose-sm max-w-none latex-container">
+                  <ReactMarkdown
+                    remarkPlugins={[remarkMath]}
+                    rehypePlugins={[[rehypeKatex, { throwOnError: false, strict: false, output: 'html' }]]}
+                    components={markdownComponents}
+                  >
+                    {message.content}
+                  </ReactMarkdown>
+                </div>
+              </LaTeXErrorBoundary>
             </motion.div>
           </motion.div>
         ))}

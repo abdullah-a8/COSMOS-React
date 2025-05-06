@@ -122,3 +122,101 @@
     background-color: rgba(147, 51, 234, 0.7);
   }
 }
+
+/* LaTeX rendering fixes */
+.latex-container {
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.latex-container .katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.5rem 0;
+  margin: 0.5rem 0;
+}
+
+.latex-container .katex {
+  max-width: 100%;
+  font-size: 1.1em;
+  line-height: 1.2;
+  white-space: normal;
+}
+
+.latex-container .katex-html {
+  white-space: normal;
+}
+
+/* Fix for long LaTeX expressions */
+.latex-container .katex-display > .katex {
+  display: inline-block;
+  white-space: nowrap;
+  max-width: 100%;
+  padding: 0.2rem 0;
+}
+
+/* Add horizontal scrolling only when needed */
+.latex-container .katex-display > .katex > .katex-html {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 0.5rem; /* For scrollbar space */
+}
+
+/* Ensure inline formulas don't break layout */
+.latex-container .katex-inline {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* Apply error style */
+.katex-error {
+  color: #ff6b6b;
+  background: rgba(255, 0, 0, 0.1);
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.25rem;
+  font-family: monospace;
+}
+
+/* Mobile specific adjustments */
+@media (max-width: 768px) {
+  .latex-container .katex {
+    font-size: 0.9em;
+  }
+  
+  .latex-container .katex-display {
+    margin: 0.3rem 0;
+    padding: 0.3rem 0;
+  }
+  
+  /* Make sure overflow indicators are visible on mobile */
+  .latex-container::-webkit-scrollbar {
+    height: 4px;
+  }
+  
+  .latex-container::-webkit-scrollbar-thumb {
+    background-color: rgba(147, 51, 234, 0.3);
+    border-radius: 2px;
+  }
+  
+  .latex-container::-webkit-scrollbar-track {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* KaTeX rendering safety measures */
+.katex-display.katex-error-message {
+  color: #ff6b6b;
+  padding: 0.2rem;
+  margin: 0.2rem 0;
+  font-family: monospace;
+  font-size: 0.85em;
+  white-space: pre-wrap;
+  border-left: 3px solid #ff6b6b;
+  background-color: rgba(255, 107, 107, 0.1);
+}
+
+/* Prevent LaTeX from causing UI jank */
+.katex-version {
+  display: none;
+}
