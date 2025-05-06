@@ -255,9 +255,15 @@ class CosmosConnector:
                         url = metadata.get("url", "") # URL might also be in metadata
                         source_details = f"VIDEO_ID: {video_id}\nURL: {url}"
                     elif source_type == "pdf":
-                        # Use the source_id (which is the hash for PDFs)
                         source_details = f"DOC_ID: {source_id}"
-                    else: # Handle 'unknown' or other types
+                    elif source_type == "image":
+                        # Add specific handling for image sources
+                        source_details = f"IMAGE_ID: {source_id}"
+                        if "content_type" in metadata:
+                            source_details += f"\nFORMAT: {metadata.get('content_type')}"
+                        if "ocr_processed" in metadata and metadata.get("ocr_processed"):
+                            source_details += "\nEXTRACTION: OCR"
+                    else:
                         source_details = f"SOURCE_ID: {source_id}"
 
                     # Format each document chunk with structured source info
@@ -281,8 +287,14 @@ class CosmosConnector:
             # --- Invoke Chain with CORRECT Input --- 
             # Start LLM generation timing
             llm_start = time.time()
+            
+            # Add LaTeX support instruction to the question
+            latex_enhanced_query = query
+            if any(keyword in query.lower() for keyword in ["math", "equation", "formula", "recurrence", "time complexity", "big o", "complexity"]):
+                latex_enhanced_query = query + " Please format any mathematical expressions or equations using LaTeX syntax with $ for inline math and $$ for display math."
+            
             # Run synchronous chain.invoke in threadpool
-            response_dict = await run_in_threadpool(chain.invoke, {"question": query, "context": context})
+            response_dict = await run_in_threadpool(chain.invoke, {"question": latex_enhanced_query, "context": context})
             llm_time = time.time() - llm_start
             logger.info(f"LLM generation took {llm_time:.2f}s")
             
@@ -413,6 +425,13 @@ class CosmosConnector:
                         source_details = f"VIDEO_ID: {video_id}\nURL: {url}"
                     elif source_type == "pdf":
                         source_details = f"DOC_ID: {source_id}"
+                    elif source_type == "image":
+                        # Add specific handling for image sources
+                        source_details = f"IMAGE_ID: {source_id}"
+                        if "content_type" in metadata:
+                            source_details += f"\nFORMAT: {metadata.get('content_type')}"
+                        if "ocr_processed" in metadata and metadata.get("ocr_processed"):
+                            source_details += "\nEXTRACTION: OCR"
                     else:
                         source_details = f"SOURCE_ID: {source_id}"
 
@@ -437,7 +456,12 @@ class CosmosConnector:
             logger.info("Starting streaming response generation...")
             llm_start = time.time()
             
-            async for chunk in streaming_chain.astream({"question": query, "context": context}):
+            # Add LaTeX support instruction to the question
+            latex_enhanced_query = query
+            if any(keyword in query.lower() for keyword in ["math", "equation", "formula", "recurrence", "time complexity", "big o", "complexity"]):
+                latex_enhanced_query = query + " Please format any mathematical expressions or equations using LaTeX syntax with $ for inline math and $$ for display math."
+            
+            async for chunk in streaming_chain.astream({"question": latex_enhanced_query, "context": context}):
                 # Process the chunk based on its format
                 # With ChatGroq, the chunks are typically dict-like objects with content
                 if hasattr(chunk, 'content'):
@@ -1049,6 +1073,27 @@ class CosmosConnector:
                 chunk_size=chunk_size,
                 chunk_overlap=chunk_overlap
             )
+
+            # First, prepare text with metadata prefix to ensure it's processed correctly
+            metadata_prefix = f"IMAGE SOURCE: {filename}\n\n"
+            content_with_metadata = metadata_prefix + extracted_text
+            
+            chunks, chunk_ids = await run_in_threadpool(
+                self.processing.process_content,
+                content=content_with_metadata,
+                source_id=str(doc_id),
+                chunk_size=chunk_size,
+                chunk_overlap=chunk_overlap
+            )
+            
+            # Manually update the metadata for each chunk to ensure source_type is set correctly
+            for chunk in chunks:
+                if hasattr(chunk, 'metadata'):
+                    chunk.metadata['source_type'] = 'image'
+                    chunk.metadata['display_name'] = filename
+                    # Keep these for debugging and provenance tracking
+                    chunk.metadata['ocr_processed'] = True
+                    chunk.metadata['content_type'] = content_type
             
             if not chunks:
                 logger.warning(f"No chunks created from extracted text for {filename}")

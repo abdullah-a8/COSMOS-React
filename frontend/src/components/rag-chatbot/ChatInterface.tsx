@@ -2,6 +2,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Send, Settings, FileText, Link as LinkIcon, Video, Loader2, MessageSquare, Image } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { motion, AnimatePresence } from 'framer-motion';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 
 interface Message {
   role: 'user' | 'assistant' | 'system';
@@ -177,6 +180,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
             >
               <div className="prose prose-invert prose-sm max-w-none">
                 <ReactMarkdown
+                  remarkPlugins={[remarkMath]}
+                  rehypePlugins={[rehypeKatex]}
                   components={{
                     p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
                     ul: ({ children }) => <ul className="list-disc pl-5 mb-2">{children}</ul>,
