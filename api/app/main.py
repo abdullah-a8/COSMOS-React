@@ -1,6 +1,9 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException # Added HTTPException for 404 handling
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles # Added StaticFiles to serve static assets
+from fastapi.responses import FileResponse # Added FileResponse to serve index.html
 import logging
+import os # Added os for path manipulation
 
 from .core.config import settings
 from .routers import rag, youtube, gmail
@@ -62,11 +65,29 @@ app.include_router(rag.router, prefix=f"{settings.API_V1_STR}/rag", tags=["rag"]
 app.include_router(youtube.router, prefix=f"{settings.API_V1_STR}/youtube", tags=["youtube"])
 app.include_router(gmail.router, prefix=f"{settings.API_V1_STR}/gmail", tags=["gmail"])
 
-@app.get("/", include_in_schema=False)
-async def root():
-    return {"message": "Welcome to COSMOS API - use /api/v1/docs for documentation"}
+# --- Serve React Frontend Static Files ---
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
+FRONTEND_DIST_DIR = os.path.join(PROJECT_ROOT, "frontend", "dist")
+
+app.mount("/assets", StaticFiles(directory=os.path.join(FRONTEND_DIST_DIR, "assets"), html=False), name="assets")
+
+# Serve index.html for the root path
+@app.get("/")
+async def serve_root_react_app():
+    index_html_path = os.path.join(FRONTEND_DIST_DIR, "index.html")
+    if os.path.exists(index_html_path):
+        return FileResponse(index_html_path)
+    raise HTTPException(status_code=404, detail="Frontend index.html not found.")
+
+# Serve index.html for all other paths (client-side routing)
+@app.get("/{full_path:path}")
+async def serve_react_app(full_path: str):
+    index_html_path = os.path.join(FRONTEND_DIST_DIR, "index.html")
+    if os.path.exists(index_html_path):
+        return FileResponse(index_html_path)
+    raise HTTPException(status_code=404, detail="Frontend index.html not found.")
 
 @app.get(f"{settings.API_V1_STR}/health", tags=["health"])
 async def health_check():
     """Health check endpoint"""
-    return {"status": "healthy"} 
+    return {"status": "healthy"}
