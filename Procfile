@@ -1,1 +1,4 @@
-web: sh -c "uvicorn api.app.main:app --host 127.0.0.1 --port $PORT & bin/heroku-php-nginx -C config/nginx.conf.erb"
+web: sh -c "\
+  uvicorn api.app.main:app --host 127.0.0.1 --port \$PORT & \
+  nginx -c \$HOME/config/nginx.conf.erb -g 'daemon off;' \
+"
