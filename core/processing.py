@@ -55,6 +55,18 @@ def process_content(content, chunk_size, chunk_overlap, source_id):
             "citation_text": f"Web article at {source_id}",
             "display_name": domain_name
         })
+    # Check if content starts with image source marker
+    elif isinstance(content, str) and content.lstrip().startswith("IMAGE SOURCE:"):
+        # Extract image filename from marker
+        first_line = content.lstrip().split("\n")[0]
+        filename = first_line.replace("IMAGE SOURCE:", "").strip()
+        short_id = source_id[:8] + "..." if len(source_id) > 8 else source_id
+        source_metadata.update({
+            "source_type": "image",
+            "title": f"Image: {filename}",
+            "citation_text": f"Image: {filename}",
+            "display_name": filename
+        })
     else:  # Assume PDF (or other document types) identified by hash
         short_id = source_id[:8] + "..." if len(source_id) > 8 else source_id
         source_metadata.update({

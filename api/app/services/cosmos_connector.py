@@ -1065,19 +1065,11 @@ class CosmosConnector:
             # Log the length of extracted text for debugging
             logger.info(f"Successfully extracted {len(extracted_text)} characters from {filename}")
             
-            # Process the extracted text
-            chunks, chunk_ids = await run_in_threadpool(
-                self.processing.process_content,
-                content=extracted_text,
-                source_id=str(doc_id),
-                chunk_size=chunk_size,
-                chunk_overlap=chunk_overlap
-            )
-
             # First, prepare text with metadata prefix to ensure it's processed correctly
             metadata_prefix = f"IMAGE SOURCE: {filename}\n\n"
             content_with_metadata = metadata_prefix + extracted_text
             
+            # Process the extracted text
             chunks, chunk_ids = await run_in_threadpool(
                 self.processing.process_content,
                 content=content_with_metadata,
