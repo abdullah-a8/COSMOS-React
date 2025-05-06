@@ -30,5 +30,5 @@ pytube2==15.0.12
 yt-dlp==2025.3.31
 Pillow==11.1.0
 tenacity==9.1.2
-email-validator==2.1.1
+email-validator==2.2.0
 requests==2.32.3
