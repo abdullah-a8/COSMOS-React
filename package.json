@@ -5,6 +5,6 @@
     "node": "22.14.0"
   },
   "scripts": {
-    "heroku-postbuild": "cd frontend && npm install --include=dev && npm run build"
+    "heroku-postbuild": "cd frontend && npm install --include=dev --legacy-peer-deps && npm run build"
   }
 } 
