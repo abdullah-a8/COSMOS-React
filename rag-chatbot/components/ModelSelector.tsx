@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import React, { useState, useRef, useEffect } from "react"
 import { Check, ChevronDown, X } from "lucide-react"
+import { formatModelNameForDisplay } from "../utils/models"
 
 interface ModelSelectorProps {
   models: string[]
@@ -49,7 +50,7 @@ export default function ModelSelector({ models, selectedModels, onChange }: Mode
               key={model}
               className="flex items-center bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 px-2 py-1 rounded-md"
             >
-              <span className="text-sm">{model}</span>
+              <span className="text-sm">{formatModelNameForDisplay(model)}</span>
               <button
                 onClick={(e) => {
                   e.stopPropagation()
@@ -90,7 +91,7 @@ export default function ModelSelector({ models, selectedModels, onChange }: Mode
               >
                 {selectedModels.includes(model) && <Check size={14} className="text-white" />}
               </div>
-              <span className="ml-2">{model}</span>
+              <span className="ml-2">{formatModelNameForDisplay(model)}</span>
             </div>
           ))}
         </div>

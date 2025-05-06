@@ -10,7 +10,7 @@ import { models } from '../utils/models';
 
 const RagChatbot: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [selectedModels, setSelectedModels] = useState<string[]>(["llama3-70b-8192"]);
+  const [selectedModels, setSelectedModels] = useState<string[]>(["llama-3.3-70b-versatile"]);
   const [temperature, setTemperature] = useState(0.7);
   const [chunkSize, setChunkSize] = useState(500);
   const [chunkOverlap, setChunkOverlap] = useState(50);
@@ -40,7 +40,7 @@ const RagChatbot: React.FC = () => {
   };
 
   const resetSettings = () => {
-    setSelectedModels(["llama3-70b-8192"]);
+    setSelectedModels(["llama-3.3-70b-versatile"]);
     setTemperature(0.7);
     setChunkSize(500);
     setChunkOverlap(50);

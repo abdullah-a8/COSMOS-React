@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Slider } from '../ui/slider';
-import { ModelInfo } from '../../utils/models';
+import { ModelInfo, formatModelNameForDisplay } from '../../utils/models';
 import { CheckSquare, Square, ChevronDown, ChevronUp, Info } from 'lucide-react';
 
 interface SettingsSidebarProps {
@@ -75,7 +75,7 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
                 {selectedModels.length === 0 
                   ? "Select models..." 
                   : selectedModels.length === 1 
-                    ? selectedModels[0]
+                    ? formatModelNameForDisplay(selectedModels[0])
                     : `${selectedModels.length} models selected`}
               </span>
               {isModelDropdownOpen ? 
@@ -100,7 +100,7 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
                         )}
                       </div>
                       <span className={`flex-1 ${selectedModels.includes(modelName) ? 'text-purple-300' : 'text-white/70 group-hover:text-white'}`}>
-                        {modelName}
+                        {formatModelNameForDisplay(modelName)}
                       </span>
                       <button
                         onClick={(e) => {
@@ -142,7 +142,7 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
               {selectedModels.map((modelName) => (
                 <div key={modelName} 
                   className="px-3 py-1.5 bg-purple-900/30 text-purple-300 rounded-full text-sm flex items-center">
-                  {modelName}
+                  {formatModelNameForDisplay(modelName)}
                   <button 
                     onClick={() => selectedModels.length > 1 ? toggleModel(modelName) : null}
                     className="ml-2 text-purple-400 hover:text-white"

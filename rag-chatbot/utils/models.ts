@@ -1,52 +1,174 @@
-import type { ModelInfo } from "../types/models"
+import { ModelInfo } from '../types/models';
+
 
 export const models: Record<string, ModelInfo> = {
-  "gpt-4o": {
-    requestsPerMinute: 500,
-    requestsPerDay: 720000,
-    tokensPerMinute: 300000,
-    tokensPerDay: 432000000,
-    advantages: "Best overall performance, strong reasoning, follows instructions well",
-    disadvantages: "More expensive, can be slower than other models",
+  "llama-3.3-70b-versatile": {
+    id: "llama-3.3-70b-versatile",
+    name: "Llama 3.3 70B",
+    description: "Meta's versatile large language model with 128K context window and excellent reasoning capabilities. Recommended for production use.",
+    contextWindow: 128000,
+    isDefault: true,
+    speed: "Fast",
+    reasoning: "Excellent",
+    math: "Excellent",
+    coding: "Very Good",
+    throughput: "High",
+    cost: "Medium",
+    requestsPerMinute: 30,
+    requestsPerDay: 1000,
+    tokensPerMinute: 6000,
+    tokensPerDay: 100000,
+    advantages: "Versatile model optimized for high accuracy in diverse scenarios.",
+    disadvantages: "Lower throughput compared to some smaller models."
   },
-  "gpt-3.5-turbo": {
-    requestsPerMinute: 3500,
-    requestsPerDay: 5040000,
-    tokensPerMinute: 1000000,
-    tokensPerDay: 1440000000,
-    advantages: "Fast response time, cost-effective, good for simple tasks",
-    disadvantages: "Less accurate than GPT-4, weaker reasoning capabilities",
+  "llama-3.1-8b-instant": {
+    id: "llama-3.1-8b-instant",
+    name: "Llama 3.1 8B",
+    description: "Meta's smaller but powerful model with 128K context window. Ideal for rapid prototyping and cost-effective deployments.",
+    contextWindow: 128000,
+    isDefault: false,
+    speed: "Very Fast",
+    reasoning: "Good",
+    math: "Good",
+    coding: "Good",
+    throughput: "Very High",
+    cost: "Very Low",
+    requestsPerMinute: 30,
+    requestsPerDay: 14400,
+    tokensPerMinute: 20000,
+    tokensPerDay: 500000,
+    advantages: "High-speed processing with large token capacity, great for real-time applications.",
+    disadvantages: "Less accurate for complex reasoning tasks compared to larger models."
   },
-  "claude-3-opus": {
-    requestsPerMinute: 300,
-    requestsPerDay: 432000,
-    tokensPerMinute: 250000,
-    tokensPerDay: 360000000,
-    advantages: "Excellent for long-form content, strong reasoning, good at following instructions",
-    disadvantages: "Slower than some alternatives, higher cost than Claude Sonnet",
-  },
-  "claude-3-sonnet": {
-    requestsPerMinute: 500,
-    requestsPerDay: 720000,
-    tokensPerMinute: 400000,
-    tokensPerDay: 576000000,
-    advantages: "Good balance of speed and quality, strong reasoning, cost-effective",
-    disadvantages: "Less capable than Opus, can be verbose",
+  "gemma2-9b-it": {
+    id: "gemma2-9b-it",
+    name: "Gemma 2 9B",
+    description: "Google's instruction-tuned general-purpose model that excels at reasoning and helpfulness with 8K context window.",
+    contextWindow: 8192,
+    isDefault: false,
+    speed: "Very Fast",
+    reasoning: "Very Good",
+    math: "Good",
+    coding: "Good",
+    throughput: "High",
+    cost: "Low",
+    requestsPerMinute: 30,
+    requestsPerDay: 14400,
+    tokensPerMinute: 15000,
+    tokensPerDay: 500000,
+    advantages: "Higher token throughput, suitable for large-scale, fast inference.",
+    disadvantages: "Limited versatility compared to larger LLaMA3 models."
   },
   "llama3-70b-8192": {
-    requestsPerMinute: 450,
-    requestsPerDay: 648000,
-    tokensPerMinute: 350000,
-    tokensPerDay: 504000000,
-    advantages: "Open weights model, strong general capabilities, good for code generation",
-    disadvantages: "Less reliable than closed models, inconsistent performance on specialized tasks",
+    id: "llama3-70b-8192",
+    name: "Llama 3 70B",
+    description: "Meta's large language model with 8K context window, offering strong performance across a wide range of tasks.",
+    contextWindow: 8192,
+    isDefault: false,
+    speed: "Fast",
+    reasoning: "Very Good",
+    math: "Very Good",
+    coding: "Very Good",
+    throughput: "Medium",
+    cost: "Medium",
+    requestsPerMinute: 30,
+    requestsPerDay: 14400,
+    tokensPerMinute: 6000,
+    tokensPerDay: 500000,
+    advantages: "Long-context capabilities, ideal for handling detailed research papers and articles.",
+    disadvantages: "Moderate speed and accuracy for shorter tasks."
   },
-  "mistral-large": {
-    requestsPerMinute: 700,
-    requestsPerDay: 1008000,
-    tokensPerMinute: 500000,
-    tokensPerDay: 720000000,
-    advantages: "Fast inference, good performance for size, efficient token usage",
-    disadvantages: "Less capable than larger models, limited context window",
+  "llama3-8b-8192": {
+    id: "llama3-8b-8192",
+    name: "Llama 3 8B",
+    description: "Meta's compact model with 8K context window, balancing performance and efficiency.",
+    contextWindow: 8192,
+    isDefault: false,
+    speed: "Very Fast",
+    reasoning: "Good",
+    math: "Good",
+    coding: "Good",
+    throughput: "High",
+    cost: "Low",
+    requestsPerMinute: 30,
+    requestsPerDay: 14400,
+    tokensPerMinute: 20000,
+    tokensPerDay: 500000,
+    advantages: "Supports high-speed inference with long-context support.",
+    disadvantages: "Slightly less accurate for complex reasoning compared to larger models."
   },
-}
+  "meta-llama/llama-4-maverick-17b-128e-instruct": {
+    id: "meta-llama/llama-4-maverick-17b-128e-instruct",
+    name: "Llama 4 Maverick",
+    description: "PREVIEW: Meta's advanced model with Mixture of Experts (MoE) architecture (17Bx128E). Superior for multilingual and multimodal tasks.",
+    contextWindow: 131072,
+    isDefault: false,
+    speed: "Fast",
+    reasoning: "Excellent",
+    math: "Excellent",
+    coding: "Excellent",
+    throughput: "Medium",
+    cost: "Medium-High",
+    requestsPerMinute: 20,
+    requestsPerDay: 1000,
+    tokensPerMinute: 5000,
+    tokensPerDay: 100000,
+    advantages: "State-of-the-art model with exceptional reasoning and multimodal capabilities.",
+    disadvantages: "Preview model that may be subject to change or discontinuation."
+  },
+  "meta-llama/llama-4-scout-17b-16e-instruct": {
+    id: "meta-llama/llama-4-scout-17b-16e-instruct",
+    name: "Llama 4 Scout",
+    description: "PREVIEW: Meta's high-speed model with MoE architecture (17Bx16E). Excellent for summarization, reasoning, and code.",
+    contextWindow: 131072,
+    isDefault: false,
+    speed: "Very Fast",
+    reasoning: "Very Good",
+    math: "Very Good",
+    coding: "Very Good",
+    throughput: "Very High",
+    cost: "Medium",
+    requestsPerMinute: 30,
+    requestsPerDay: 5000,
+    tokensPerMinute: 25000,
+    tokensPerDay: 300000,
+    advantages: "Extremely high throughput with strong performance across diverse tasks.",
+    disadvantages: "Preview model that may be subject to change or discontinuation."
+  },
+  "deepseek-r1-distill-llama-70b": {
+    id: "deepseek-r1-distill-llama-70b",
+    name: "DeepSeek R1",
+    description: "PREVIEW: DeepSeek's powerful distilled model with 128K context window. Excellent for reasoning, math, and coding tasks.",
+    contextWindow: 128000,
+    isDefault: false,
+    speed: "Fast",
+    reasoning: "Excellent",
+    math: "Excellent",
+    coding: "Excellent",
+    throughput: "High",
+    cost: "Medium",
+    requestsPerMinute: 30,
+    requestsPerDay: 1000,
+    tokensPerMinute: 6000,
+    tokensPerDay: undefined,
+    advantages: "Highly optimized for low latency with virtually unlimited token capacity, making it ideal for large-scale deployments.",
+    disadvantages: "Limited daily requests compared to other models and preview status."
+  }
+};
+
+export const getDefaultModel = (): ModelInfo => {
+  const defaultModelEntry = Object.entries(models).find(([_, model]) => model.isDefault);
+  if (!defaultModelEntry) {
+    throw new Error('No default model found');
+  }
+  return defaultModelEntry[1];
+};
+
+export const getModelById = (id: string): ModelInfo | undefined => {
+  return models[id];
+};
+
+// Format model name for display (removes meta-llama/ prefix)
+export const formatModelNameForDisplay = (modelId: string): string => {
+  return modelId.replace('meta-llama/', '');
+};
