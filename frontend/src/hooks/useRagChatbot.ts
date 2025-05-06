@@ -9,6 +9,7 @@ interface SourceFilters {
   pdf: boolean;
   url: boolean;
   youtube: boolean;
+  image: boolean;
 }
 
 interface PdfUploadResponse {
@@ -22,6 +23,14 @@ interface UrlProcessResponse {
   success: boolean;
   document_id?: string;
   chunk_count?: number;
+  message?: string;
+}
+
+interface ImageProcessResponse {
+  success: boolean;
+  document_id?: string;
+  chunk_count?: number;
+  ocr_status?: string; 
   message?: string;
 }
 
@@ -45,6 +54,7 @@ const API_BASE = import.meta.env.PROD ? '/api/v1' : 'http://localhost:8000/api/v
 export function useRagChatbot(chunkSize: number, chunkOverlap: number) {
   const [file, setFile] = useState<File | null>(null);
   const [url, setUrl] = useState<string>('');
+  const [uploadMethod, setUploadMethod] = useState<'pdf' | 'url' | 'image'>('pdf');
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [isQueryProcessing, setIsQueryProcessing] = useState<boolean>(false);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'processing' | 'success' | 'error'>('idle');
@@ -55,6 +65,7 @@ export function useRagChatbot(chunkSize: number, chunkOverlap: number) {
     pdf: true,
     url: true,
     youtube: true,
+    image: true,
   });
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [statusMessage, setStatusMessage] = useState<string>('');
@@ -146,6 +157,23 @@ export function useRagChatbot(chunkSize: number, chunkOverlap: number) {
       setElapsedTime(finalTime);
     }
   }, []);
+
+  // After successful processing, hide the status message after a delay
+  useEffect(() => {
+    let hideTimeout: NodeJS.Timeout | null = null;
+    
+    if (uploadStatus === 'success') {
+      hideTimeout = setTimeout(() => {
+        setUploadStatus('idle');
+      }, 5000); // Hide after 5 seconds
+    }
+    
+    return () => {
+      if (hideTimeout) {
+        clearTimeout(hideTimeout);
+      }
+    };
+  }, [uploadStatus]);
 
   // Function to process file upload
   const processFile = useCallback(async () => {
@@ -243,6 +271,53 @@ export function useRagChatbot(chunkSize: number, chunkOverlap: number) {
     }
   }, [url, chunkSize, chunkOverlap, startTimer, stopTimer]);
 
+  // Function to process image/PDF using OCR
+  const processImage = useCallback(async () => {
+    if (!file) return;
+
+    try {
+      setIsProcessing(true);
+      setUploadStatus('processing');
+      setStatusMessage('Uploading and processing image with OCR...');
+      setUploadProgress(0);
+      startTimer();
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('chunk_size', chunkSize.toString());
+      formData.append('chunk_overlap', chunkOverlap.toString());
+
+      const response = await fetch(`${API_BASE}/rag/image`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to process image');
+      }
+
+      const data: ImageProcessResponse = await response.json();
+      
+      if (data.success) {
+        stopTimer(); // Stop timer before setting status
+        setUploadStatus('success');
+        setStatusMessage(`Successfully processed image with OCR. Created ${data.chunk_count} chunks.`);
+      } else {
+        stopTimer(); // Stop timer before setting status
+        setUploadStatus('error');
+        setStatusMessage(data.message || 'Failed to process image');
+      }
+    } catch (err) {
+      stopTimer(); // Stop timer before setting status
+      setUploadStatus('error');
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+      setStatusMessage(`Error: ${errorMessage}`);
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [file, chunkSize, chunkOverlap, startTimer, stopTimer]);
+
   // Function to send a chat message
   const sendMessage = useCallback(async (content: string, selectedModels: string[], temperature: number) => {
     if (!content.trim() || isQueryProcessing) return;
@@ -257,6 +332,7 @@ export function useRagChatbot(chunkSize: number, chunkOverlap: number) {
         pdf: sourceFilters.pdf,
         url: sourceFilters.url,
         youtube: sourceFilters.youtube,
+        image: sourceFilters.image,
       };
 
       // If only one model is selected, use streaming
@@ -443,23 +519,49 @@ export function useRagChatbot(chunkSize: number, chunkOverlap: number) {
     }
   }, [isQueryProcessing, sourceFilters]);
 
+  // Add upload method change handler
+  const handleUploadMethodChange = useCallback((method: 'pdf' | 'url' | 'image') => {
+    setUploadMethod(method);
+    // Reset file/url when switching methods
+    if (method === 'url') {
+      setFile(null);
+    } else {
+      setUrl('');
+    }
+  }, []);
+
+  // Function to handle form submission based on upload method
+  const handleSubmit = useCallback(() => {
+    if (uploadMethod === 'pdf') {
+      processFile();
+    } else if (uploadMethod === 'url') {
+      processUrl();
+    } else if (uploadMethod === 'image') {
+      processImage();
+    }
+  }, [uploadMethod, processFile, processUrl, processImage]);
+
   return {
     file,
+    handleFileChange,
     url,
+    handleUrlChange,
     isProcessing,
     isQueryProcessing,
     uploadStatus,
     messages,
-    sourceFilters,
     uploadProgress,
     statusMessage,
     elapsedTime: uploadStatus === 'processing' ? elapsedTime : processingTime,
-    handleUrlChange,
-    handleFileChange,
+    uploadMethod,
+    handleUploadMethodChange,
+    sourceFilters,
+    setSourceFilters,
     processFile,
     processUrl,
+    processImage,
+    handleSubmit,
     sendMessage,
-    setSourceFilters,
     reset,
   };
 } 

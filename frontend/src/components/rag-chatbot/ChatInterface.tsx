@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Settings, FileText, Link as LinkIcon, Video, Loader2, MessageSquare } from 'lucide-react';
+import { Send, Settings, FileText, Link as LinkIcon, Video, Loader2, MessageSquare, Image } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -12,6 +12,7 @@ interface SourceFilters {
   pdf: boolean;
   url: boolean;
   youtube: boolean;
+  image: boolean;
 }
 
 interface ChatInterfaceProps {
@@ -129,8 +130,21 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 <Video className="h-4 w-4 mr-2" />
                 YouTube Transcripts
               </motion.button>
+              <motion.button
+                onClick={() => toggleFilter('image')}
+                className={`flex items-center px-3 py-1.5 rounded-md text-sm transition-colors ${
+                  sourceFilters.image
+                    ? 'bg-purple-600/80 text-white'
+                    : 'bg-white/5 text-white/60 hover:bg-white/10'
+                }`}
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+              >
+                <Image className="h-4 w-4 mr-2" />
+                Images (OCR)
+              </motion.button>
             </div>
-            {!sourceFilters.pdf && !sourceFilters.url && !sourceFilters.youtube && (
+            {!sourceFilters.pdf && !sourceFilters.url && !sourceFilters.youtube && !sourceFilters.image && (
               <p className="text-amber-300 text-xs mt-2 flex items-center">
                 <span className="mr-1">⚠️</span> Please select at least one knowledge source type
               </p>

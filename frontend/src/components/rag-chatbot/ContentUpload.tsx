@@ -1,10 +1,10 @@
 import React, { ChangeEvent, useRef, useState } from 'react';
-import { FileText, Link as LinkIcon, Upload, ChevronDown } from 'lucide-react';
+import { FileText, Link as LinkIcon, Upload, ChevronDown, Image } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface ContentUploadProps {
-  uploadMethod: 'pdf' | 'url';
-  onUploadMethodChange: (method: 'pdf' | 'url') => void;
+  uploadMethod: 'pdf' | 'url' | 'image';
+  onUploadMethodChange: (method: 'pdf' | 'url' | 'image') => void;
   file: File | null;
   onFileChange: (file: File | null) => void;
   url: string;
@@ -46,6 +46,48 @@ const ContentUpload: React.FC<ContentUploadProps> = ({
 
   const toggleExpanded = () => {
     setIsExpanded(!isExpanded);
+  };
+
+  // Determine file input accept attribute based on upload method
+  const getAcceptTypes = () => {
+    if (uploadMethod === 'pdf') {
+      return '.pdf';
+    } else if (uploadMethod === 'image') {
+      return 'image/*,.pdf'; // Accept both images and PDFs
+    }
+    return '';
+  };
+
+  // Get the appropriate button text based on upload method
+  const getProcessButtonText = () => {
+    if (isProcessing) return 'Processing...';
+    
+    if (uploadMethod === 'pdf') {
+      return 'Process PDF';
+    } else if (uploadMethod === 'image') {
+      return 'Process Image';
+    }
+    return 'Process';
+  };
+
+  // Get placeholder text based on upload method
+  const getPlaceholderText = () => {
+    if (uploadMethod === 'pdf') {
+      return 'Drop your PDF file here or click to browse';
+    } else if (uploadMethod === 'image') {
+      return 'Drop your image or PDF here or click to browse';
+    }
+    return 'Drop your file here or click to browse';
+  };
+
+  // Get format description text based on upload method
+  const getFormatText = () => {
+    if (uploadMethod === 'pdf') {
+      return 'PDF files only, max 10MB';
+    } else if (uploadMethod === 'image') {
+      return 'Images or PDF files, max 10MB';
+    }
+    return 'Max 10MB';
   };
 
   return (
@@ -113,6 +155,21 @@ const ContentUpload: React.FC<ContentUploadProps> = ({
               </motion.button>
               <motion.button
                 className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  uploadMethod === 'image'
+                    ? 'bg-purple-600 text-white'
+                    : 'text-white/70 hover:text-white hover:bg-white/5'
+                }`}
+                onClick={() => onUploadMethodChange('image')}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <div className="flex items-center">
+                  <Image className="h-4 w-4 mr-2" />
+                  Image
+                </div>
+              </motion.button>
+              <motion.button
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                   uploadMethod === 'url'
                     ? 'bg-purple-600 text-white'
                     : 'text-white/70 hover:text-white hover:bg-white/5'
@@ -128,12 +185,12 @@ const ContentUpload: React.FC<ContentUploadProps> = ({
               </motion.button>
             </motion.div>
 
-            {/* PDF Upload */}
+            {/* File Upload (PDF or Image) */}
             <AnimatePresence mode="wait">
-              {uploadMethod === 'pdf' && (
+              {(uploadMethod === 'pdf' || uploadMethod === 'image') && (
                 <motion.div 
                   className="space-y-4"
-                  key="pdf-upload"
+                  key={`${uploadMethod}-upload`}
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
@@ -149,7 +206,7 @@ const ContentUpload: React.FC<ContentUploadProps> = ({
                       type="file"
                       ref={fileInputRef}
                       onChange={handleFileChange}
-                      accept=".pdf"
+                      accept={getAcceptTypes()}
                       disabled={isProcessing}
                       className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                     />
@@ -166,7 +223,11 @@ const ContentUpload: React.FC<ContentUploadProps> = ({
                       >
                         {file ? (
                           <>
-                            <FileText className="h-8 w-8 text-purple-400 mb-2" />
+                            {uploadMethod === 'image' && file.type.startsWith('image/') ? (
+                              <Image className="h-8 w-8 text-purple-400 mb-2" />
+                            ) : (
+                              <FileText className="h-8 w-8 text-purple-400 mb-2" />
+                            )}
                             <p className="text-sm font-medium text-white mb-1">{file.name}</p>
                             <p className="text-xs text-white/60">
                               {(file.size / 1024 / 1024).toFixed(2)} MB
@@ -174,9 +235,13 @@ const ContentUpload: React.FC<ContentUploadProps> = ({
                           </>
                         ) : (
                           <>
-                            <FileText className="h-8 w-8 text-white/40 mb-2" />
-                            <p className="text-sm font-medium text-white mb-1">Drop your PDF file here or click to browse</p>
-                            <p className="text-xs text-white/60">PDF files only, max 10MB</p>
+                            {uploadMethod === 'image' ? (
+                              <Image className="h-8 w-8 text-white/40 mb-2" />
+                            ) : (
+                              <FileText className="h-8 w-8 text-white/40 mb-2" />
+                            )}
+                            <p className="text-sm font-medium text-white mb-1">{getPlaceholderText()}</p>
+                            <p className="text-xs text-white/60">{getFormatText()}</p>
                           </>
                         )}
                       </motion.div>
@@ -197,7 +262,7 @@ const ContentUpload: React.FC<ContentUploadProps> = ({
                       whileHover={!(!file || isProcessing) ? { scale: 1.03 } : {}}
                       whileTap={!(!file || isProcessing) ? { scale: 0.97 } : {}}
                     >
-                      {isProcessing ? 'Processing...' : 'Process PDF'}
+                      {getProcessButtonText()}
                     </motion.button>
                     <AnimatePresence>
                       {file && (

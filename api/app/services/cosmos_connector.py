@@ -8,9 +8,11 @@ import io
 import asyncio
 import hashlib
 import json
-from functools import lru_cache
+import base64
+import requests
 from fastapi import HTTPException, status
 from fastapi.concurrency import run_in_threadpool
+from mistralai import Mistral, SDKError
 from ..core.config import settings
 from ..utils.timeout import run_with_timeout
 from googleapiclient.errors import HttpError as GoogleHttpError
@@ -127,6 +129,15 @@ class CosmosConnector:
             logger.warning("Gmail agent module (core.agents.gmail_logic) not found or import failed.")
             self.has_gmail = False
             self.gmail_logic = None
+        
+        # Check for C++ hash generator availability
+        try:
+            self.hash_generator_cpp = self._import_module("core.cpp_modules.hash_generator")
+            self.use_cpp_hash = True
+            logger.info("Using C++ hash generator for improved performance in connector.")
+        except (ImportError, ModuleNotFoundError):
+            self.use_cpp_hash = False
+            logger.info("C++ hash generator not available in connector, using Python implementation.")
     
     def _import_module(self, module_name: str) -> Any:
         """Dynamically import a module from COSMOS"""
@@ -986,5 +997,222 @@ class CosmosConnector:
             logger.exception(f"Error in process_url for {url}: {e}")
             return {"success": False, "message": str(e)}
     
-    # Note: get_email_details was already refactored above
-    # async def get_email_details(self, email_id: str) -> Dict[str, Any]: ...
+    async def process_image(self, vector_store, content: bytes, filename: str, content_type: str,
+                          chunk_size: int, chunk_overlap: int) -> Dict[str, Any]:
+        """Process and store an image in the vector database using Mistral OCR"""
+        try:
+            # Use the provided vector_store instead of initializing one
+            if not vector_store:
+                logger.error("Vector store is not available.")
+                return {"success": False, "message": "Error: Vector store is not available."}
+            
+            # Generate a hash for the image content to use as the document ID
+            doc_id = None
+            if self.use_cpp_hash:
+                # Use C++ implementation for hashing if available
+                try:
+                    doc_id = self.hash_generator_cpp.compute_sha256(content)
+                except Exception as e:
+                    logger.error(f"Error using C++ hash generator: {e}")
+                    doc_id = hashlib.sha256(content).hexdigest()
+            else:
+                # Use Python implementation
+                doc_id = hashlib.sha256(content).hexdigest()
+            
+            source_type = "image"
+            logger.info(f"Processing {filename} of type {content_type}")
+            
+            # Process the image with Mistral OCR
+            extracted_text = await run_in_threadpool(
+                self._process_with_mistral_ocr,
+                content,
+                content_type
+            )
+            
+            # Better error handling for OCR results
+            if not extracted_text:
+                logger.error(f"Empty text returned from OCR for {filename}")
+                return {"success": False, "message": f"No text extracted from image: {filename}"}
+                
+            if isinstance(extracted_text, str) and extracted_text.startswith("Error"):
+                logger.error(f"OCR error for {filename}: {extracted_text}")
+                return {"success": False, "message": f"{extracted_text} from image: {filename}"}
+                
+            # Log the length of extracted text for debugging
+            logger.info(f"Successfully extracted {len(extracted_text)} characters from {filename}")
+            
+            # Process the extracted text
+            chunks, chunk_ids = await run_in_threadpool(
+                self.processing.process_content,
+                content=extracted_text,
+                source_id=str(doc_id),
+                chunk_size=chunk_size,
+                chunk_overlap=chunk_overlap
+            )
+            
+            if not chunks:
+                logger.warning(f"No chunks created from extracted text for {filename}")
+                return {"success": False, "message": f"Image processing resulted in no chunks for {filename}."}
+                
+            logger.info(f"Created {len(chunks)} chunks from image OCR text")
+            
+            # Use the provided vector_store with timeout
+            try:
+                # Apply timeout to the vector store upsert operation
+                await run_with_timeout(
+                    run_in_threadpool, 
+                    settings.PINECONE_UPSERT_TIMEOUT,
+                    vector_store.add_documents, 
+                    chunks, 
+                    ids=chunk_ids
+                )
+                logger.info(f"Successfully added {len(chunks)} chunks to vector store from image")
+            except asyncio.TimeoutError:
+                logger.error(f"Vector store update timed out after {settings.PINECONE_UPSERT_TIMEOUT}s")
+                return {"success": False, "message": "Image was processed but could not be stored due to a timeout in the vector database. Please try again."}
+            
+            return {
+                "success": True,
+                "document_id": str(doc_id),
+                "chunk_count": len(chunks),
+                "ocr_status": "Completed successfully"
+            }
+        except Exception as e:
+            logger.exception(f"Error in process_image for {filename}: {e}")
+            return {"success": False, "message": str(e)}
+    
+    def _process_with_mistral_ocr(self, document_content: bytes, content_type: str) -> str:
+        """Process an image or PDF with Mistral OCR using the mistralai SDK"""
+        try:
+            # Check if API key is configured
+            if not settings.MISTRAL_API_KEY:
+                logger.error("Mistral API key is not configured")
+                return "Error: Mistral API key is not configured. Please set MISTRAL_API_KEY in your environment."
+            
+            # Initialize Mistral client
+            client = Mistral(api_key=settings.MISTRAL_API_KEY)
+            
+            # Encode the document content as base64
+            encoded_content = base64.b64encode(document_content).decode('utf-8')
+            
+            # Construct the data URI
+            data_uri = f"data:{content_type};base64,{encoded_content}"
+            
+            # Determine document type for the API call
+            doc_type_param = "document_url" if content_type == "application/pdf" else "image_url"
+            
+            # Prepare the document dictionary for the API call
+            document_payload = {
+                "type": doc_type_param,
+                doc_type_param: data_uri
+            }
+            
+            logger.info(f"Calling Mistral OCR API for content type: {content_type}")
+            
+            # Make the API request using the SDK
+            # Note: The SDK itself might handle retries/timeouts internally, 
+            # but we add a general exception handling layer.
+            ocr_response = client.ocr.process(
+                model="mistral-ocr-latest",
+                document=document_payload,
+                # include_image_base64=False # Default is False, we only need text
+            )
+            
+            # Combine markdown text from all pages
+            full_markdown_text = "\n\n".join([page.markdown for page in ocr_response.pages])
+            
+            if not full_markdown_text or not full_markdown_text.strip():
+                logger.warning(f"SDK OCR processing returned empty text for content type {content_type}. Will attempt REST fallback.")
+                # Let execution continue to fallback without returning success
+            else:
+                # Only return success if text was actually extracted
+                logger.info(f"SDK: Successfully extracted {len(full_markdown_text)} characters via OCR.")
+                return full_markdown_text # Success using SDK
+            
+        except SDKError as e:
+            # Handle specific Mistral API errors (e.g., auth, rate limits, invalid input)
+            logger.error(f"Mistral OCR SDK API error ({e.status_code}): {e.message} - Will attempt REST fallback.")
+            pass # Continue to fallback section
+        except Exception as e:
+            # Catch any other unexpected SDK errors including connection errors
+            logger.warning(f"Unexpected error during Mistral OCR SDK processing: {e} - Will attempt REST fallback.")
+            pass # Continue to fallback section
+            
+        # --- Attempt 2: Use REST API with requests as fallback ---    
+        logger.warning("SDK processing failed. Attempting Mistral OCR processing using REST API fallback...")
+        try:
+            # Encode the document content as base64 (might be redundant, but safe)
+            encoded_content = base64.b64encode(document_content).decode('utf-8')
+            
+            headers = {
+                "Authorization": f"Bearer {settings.MISTRAL_API_KEY}",
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+            }
+            
+            # Use the /v1/ocr endpoint for the fallback, as used by the SDK
+            endpoint_url = "https://api.mistral.ai/v1/ocr"
+            
+            # Determine document type for the API call
+            doc_type_param = "document_url" if content_type == "application/pdf" else "image_url"
+            data_uri = f"data:{content_type};base64,{encoded_content}"
+            document_payload = {
+                "type": doc_type_param,
+                doc_type_param: data_uri
+            }
+            
+            payload = {
+                "model": "mistral-ocr-latest",
+                "document": document_payload
+            }
+            
+            logger.info(f"Calling Mistral OCR REST endpoint: {endpoint_url}")
+            
+            # Make the API request using requests
+            response = requests.post(
+                endpoint_url,
+                headers=headers,
+                json=payload,
+                timeout=60  # Use a reasonable timeout
+            )
+            
+            # Check response status
+            response.raise_for_status() # Raises HTTPError for bad responses (4xx or 5xx)
+            
+            result = response.json()
+            
+            # Combine markdown text from all pages (assuming same structure as SDK)
+            full_markdown_text = "\n\n".join([page["markdown"] for page in result.get("pages", [])])
+            
+            if not full_markdown_text or not full_markdown_text.strip():
+                logger.error(f"REST fallback OCR processing returned empty text for content type {content_type}. The document might be empty or unreadable.")
+                return "Error: OCR processing (fallback) returned empty text. The document might not contain readable text."
+                
+            logger.info(f"REST Fallback: Successfully extracted {len(full_markdown_text)} characters via OCR.")
+            return full_markdown_text # Success using REST fallback
+            
+        except requests.exceptions.Timeout:
+            logger.error("Mistral OCR REST API request timed out")
+            return "Error: OCR processing (fallback) timed out."
+        except requests.exceptions.ConnectionError as e:
+            logger.error(f"Mistral OCR REST API connection error: {e}")
+            return "Error: OCR processing (fallback) failed: Could not connect to the OCR service."
+        except requests.exceptions.HTTPError as e:
+             # Handle HTTP errors from raise_for_status()
+             status_code = e.response.status_code
+             try: # Try to get JSON error detail
+                 error_detail = e.response.json().get("message", e.response.text)
+             except ValueError:
+                 error_detail = e.response.text
+             error_message = f"HTTP error {status_code}: {error_detail}"
+             logger.error(f"Mistral OCR REST API error: {error_message}")
+             if status_code == 401:
+                 return "Error: OCR processing (fallback) failed: Authentication error (invalid Mistral API key)"
+             elif status_code == 429:
+                 return "Error: OCR processing (fallback) failed: Rate limit exceeded."
+             else:
+                 return f"Error: OCR processing (fallback) failed: {error_message}"
+        except Exception as e:
+            # Catch any other unexpected errors during fallback
+            logger.exception(f"Unexpected error during Mistral OCR REST fallback processing: {e}")
+            return f"Error: An unexpected error occurred during OCR processing (fallback): {str(e)}"

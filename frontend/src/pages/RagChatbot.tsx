@@ -14,7 +14,6 @@ const RagChatbot: React.FC = () => {
   const [temperature, setTemperature] = useState(0.7);
   const [chunkSize, setChunkSize] = useState(500);
   const [chunkOverlap, setChunkOverlap] = useState(50);
-  const [uploadMethod, setUploadMethod] = useState<"pdf" | "url">("pdf");
 
   const {
     file,
@@ -30,6 +29,9 @@ const RagChatbot: React.FC = () => {
     handleFileChange,
     processFile,
     processUrl,
+    processImage,
+    uploadMethod,
+    handleUploadMethodChange,
     sendMessage,
     setSourceFilters,
     reset
@@ -53,8 +55,10 @@ const RagChatbot: React.FC = () => {
   const handleContentUpload = () => {
     if (uploadMethod === "pdf") {
       processFile();
-    } else {
+    } else if (uploadMethod === "url") {
       processUrl();
+    } else if (uploadMethod === "image") {
+      processImage();
     }
   };
 
@@ -101,13 +105,13 @@ const RagChatbot: React.FC = () => {
                 </span>
               </h1>
               <p className="text-lg text-gray-300">
-                Upload documents or websites, then chat with AI about their content using the power of Retrieval-Augmented Generation.
+                Upload documents, images, or websites, then chat with AI about their content using the power of Retrieval-Augmented Generation.
               </p>
             </div>
 
             <ContentUpload
               uploadMethod={uploadMethod}
-              onUploadMethodChange={setUploadMethod}
+              onUploadMethodChange={handleUploadMethodChange}
               file={file}
               onFileChange={handleFileChange}
               url={url}

@@ -68,6 +68,7 @@ class Settings(BaseSettings):
     GROQ_API_KEY: Optional[str] = None
     PINECONE_API_KEY: Optional[str] = None
     PINECONE_INDEX_NAME: Optional[str] = None
+    MISTRAL_API_KEY: Optional[str] = None
     
     # Path to the core COSMOS functionality
     COSMOS_CORE_PATH: str = "../"  # Default for local, overridden by env in Docker

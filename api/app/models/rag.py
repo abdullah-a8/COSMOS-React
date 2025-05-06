@@ -46,6 +46,12 @@ class URLProcessResponse(ProcessDocumentResponse):
     # document_id will typically be the URL itself
     pass
 
+# Add response model for image processing
+class ImageProcessResponse(ProcessDocumentResponse):
+    # Inherits fields from ProcessDocumentResponse
+    # document_id will be the image hash
+    ocr_status: Optional[str] = Field(None, description="Status of OCR processing")
+
 class SourceInfoResponse(BaseModel):
     source_types: List[str] = Field(..., description="List of available source types")
     document_count: int = Field(..., description="Total number of documents")

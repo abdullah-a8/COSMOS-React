@@ -13,6 +13,7 @@ from ..models.rag import (
     URLRequest,
     URLProcessResponse,
     SourceInfoResponse,
+    ImageProcessResponse,
 )
 from ..services.cosmos_connector import CosmosConnector
 from ..dependencies import get_cosmos_connector, get_vector_store_singleton
@@ -229,7 +230,7 @@ async def get_source_info(
             document_count = 0
         
         # Define expected source types without attempting to count them individually
-        defined_source_types = ["pdf", "url", "youtube", "gmail"]
+        defined_source_types = ["pdf", "url", "youtube", "gmail", "image"]
         
         # Create source counts dictionary with zeros since we're not implementing individual counting
         source_counts = {source_type: 0 for source_type in defined_source_types}
@@ -299,4 +300,65 @@ async def clear_cache(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"An error occurred while clearing the cache: {str(e)}"
-        ) 
+        )
+
+@router.post("/image", response_model=ImageProcessResponse)
+async def process_image(
+    file: UploadFile = File(...),
+    chunk_size: int = Form(512),
+    chunk_overlap: int = Form(50),
+    vector_store = Depends(get_vector_store_singleton),
+    cosmos: CosmosConnector = Depends(get_cosmos_connector)
+) -> Dict[str, Any]:
+    """
+    Process and store an image in the vector database using OCR.
+    This endpoint accepts an image file, processes it with Mistral OCR,
+    and stores the extracted text in the vector database.
+    """
+    try:
+        # Check if vector store is available
+        if vector_store is None:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Vector store connection not available. Please check your configuration."
+            )
+            
+        content = await file.read()
+        if not content:
+             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Received empty file.")
+
+        # Validate the content type
+        if not file.content_type.startswith("image/") and file.content_type != "application/pdf":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="The uploaded file is not an image or PDF. Please upload a valid image or PDF file."
+            )
+
+        result = await cosmos.process_image(
+            vector_store=vector_store,
+            content=content,
+            filename=file.filename,
+            content_type=file.content_type,
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap
+        )
+
+        if not result.get("success"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=result.get("message", "Failed to process image")
+            )
+        return result
+    except HTTPException as he:
+        # Re-raise known HTTP exceptions
+        raise he
+    except Exception as e:
+        logger.exception(f"API Error during /image processing for {file.filename}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An unexpected error occurred processing image: {str(e)}"
+        )
+    finally:
+        # Ensure file handle is closed if necessary (FastAPI usually handles this)
+        if file and hasattr(file, 'close') and callable(file.close):
+            await file.close() 
