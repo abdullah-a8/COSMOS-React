@@ -1,8 +1,9 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException # Added HTTPException for 404 handling
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles # Added StaticFiles to serve static assets
+from fastapi.responses import FileResponse # Added FileResponse to serve index.html
 import logging
-import os
-import pathlib  # 👈 NEW: to signal Heroku NGINX readiness
+import os # Added os for path manipulation
 
 from .core.config import settings
 from .routers import rag, youtube, gmail
@@ -25,50 +26,68 @@ app = FastAPI(
     redoc_url=f"{settings.API_V1_STR}/redoc",
 )
 
-# Handle permissive CORS
+# Use a simpler CORS configuration that's more robust
 allow_all = False
 if settings.CORS_ORIGINS and "*" in settings.CORS_ORIGINS:
     logger.warning("CORS configured to allow all origins. This should only be used in development.")
     allow_all = True
 
+# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"] if allow_all else settings.CORS_ORIGINS,
-    allow_credentials=not allow_all,
+    allow_credentials=not allow_all,  # Must be False if allow_origins=["*"]
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Warm up on startup
+# Warm up connections at startup
 @app.on_event("startup")
 async def warm_up_connections():
     """Initialize vector store and embedding connections at startup for better performance."""
     logger.info("Warming up vector store and embedding connections...")
-
+    
+    # Initialize embeddings first
     embeddings = get_embeddings_singleton()
     if embeddings:
         logger.info("Embeddings singleton initialized successfully")
     else:
         logger.warning("Failed to initialize embeddings singleton")
-
+    
+    # Then initialize vector store which depends on embeddings
     vector_store = get_vector_store_singleton()
     if vector_store:
         logger.info("Vector store singleton initialized and ready for queries")
     else:
         logger.warning("Failed to initialize vector store singleton")
 
-    # ✅ SIGNAL TO NGINX BUILD PACK THAT APP IS READY
-    try:
-        pathlib.Path("/tmp/app-initialized").write_text("ready")
-        logger.info("Signaled readiness to Nginx via /tmp/app-initialized")
-    except Exception as e:
-        logger.error(f"Failed to signal readiness to Nginx: {e}")
-
-# Routers
 app.include_router(rag.router, prefix=f"{settings.API_V1_STR}/rag", tags=["rag"])
 app.include_router(youtube.router, prefix=f"{settings.API_V1_STR}/youtube", tags=["youtube"])
 app.include_router(gmail.router, prefix=f"{settings.API_V1_STR}/gmail", tags=["gmail"])
 
+# --- Serve React Frontend Static Files ---
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
+FRONTEND_DIST_DIR = os.path.join(PROJECT_ROOT, "frontend", "dist")
+
+app.mount("/assets", StaticFiles(directory=os.path.join(FRONTEND_DIST_DIR, "assets"), html=False), name="assets")
+
+# Serve index.html for the root path
+@app.get("/")
+async def serve_root_react_app():
+    index_html_path = os.path.join(FRONTEND_DIST_DIR, "index.html")
+    if os.path.exists(index_html_path):
+        return FileResponse(index_html_path)
+    raise HTTPException(status_code=404, detail="Frontend index.html not found.")
+
+# Serve index.html for all other paths (client-side routing)
+@app.get("/{full_path:path}")
+async def serve_react_app(full_path: str):
+    index_html_path = os.path.join(FRONTEND_DIST_DIR, "index.html")
+    if os.path.exists(index_html_path):
+        return FileResponse(index_html_path)
+    raise HTTPException(status_code=404, detail="Frontend index.html not found.")
+
 @app.get(f"{settings.API_V1_STR}/health", tags=["health"])
 async def health_check():
+    """Health check endpoint"""
     return {"status": "healthy"}
