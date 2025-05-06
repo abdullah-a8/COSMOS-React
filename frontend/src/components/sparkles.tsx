@@ -58,8 +58,10 @@ export const SparklesCore = ({
       speedY: number
 
       constructor() {
-        this.x = Math.random() * canvas.width
-        this.y = Math.random() * canvas.height
+        const width = canvas?.width || window.innerWidth
+        const height = canvas?.height || window.innerHeight
+        this.x = Math.random() * width
+        this.y = Math.random() * height
         this.size = Math.random() * (maxSize - minSize) + minSize
         this.speedX = Math.random() * 0.5 - 0.25
         this.speedY = Math.random() * 0.5 - 0.25
@@ -69,12 +71,14 @@ export const SparklesCore = ({
         this.x += this.speedX
         this.y += this.speedY
 
-        if (this.x > canvas.width) this.x = 0
-        if (this.x < 0) this.x = canvas.width
-        if (this.y > canvas.height) this.y = 0
-        if (this.y < 0) this.y = canvas.height
+        const width = canvas?.width || window.innerWidth
+        const height = canvas?.height || window.innerHeight
 
-        // Mouse interaction
+        if (this.x > width) this.x = 0
+        if (this.x < 0) this.x = width
+        if (this.y > height) this.y = 0
+        if (this.y < 0) this.y = height
+
         const dx = mousePosition.x - this.x
         const dy = mousePosition.y - this.y
         const distance = Math.sqrt(dx * dx + dy * dy)
@@ -96,13 +100,14 @@ export const SparklesCore = ({
 
     const init = () => {
       particles = []
+      if (!canvas) return
       for (let i = 0; i < particleDensity; i++) {
         particles.push(new Particle())
       }
     }
 
     const animate = () => {
-      if (!ctx) return
+      if (!ctx || !canvas) return
       ctx.clearRect(0, 0, canvas.width, canvas.height)
 
       particles.forEach((particle) => {
@@ -118,6 +123,7 @@ export const SparklesCore = ({
 
     const handleResize = () => {
       if (typeof window === "undefined") return
+      if (!canvas) return
 
       updateDimensions()
       canvas.width = window.innerWidth
