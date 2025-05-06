@@ -10,8 +10,7 @@
     "preview": "vite preview"
   },
   "engines": {
-    "node": "22.14.0",
-    "pnpm": "10.10.0"
+    "node": "22.14.0"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.7",
