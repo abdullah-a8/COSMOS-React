@@ -4,6 +4,7 @@ import ReactMarkdown from 'react-markdown';
 import { motion, AnimatePresence } from 'framer-motion';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
+import rehypeRaw from 'rehype-raw'; // Import rehype-raw
 import 'katex/dist/katex.min.css';
 import type { Components } from 'react-markdown';
 import LaTeXErrorBoundary from './LaTeXErrorBoundary';
@@ -11,6 +12,7 @@ import LaTeXErrorBoundary from './LaTeXErrorBoundary';
 interface Message {
   role: 'user' | 'assistant' | 'system';
   content: string;
+  sources?: { number: number; text: string; type: string; identifier: string }[];
 }
 
 interface SourceFilters {
@@ -41,6 +43,61 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [filtersOpen, setFiltersOpen] = useState(false);
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
   const [renderError, setRenderError] = useState<string | null>(null);
+
+  const formatMessageWithCitations = (content: string, messageId: string | number): { processedContent: string; sources: Array<{ number: number; text: string; type: string; identifier: string }> } => {
+    const sourceRegex = /\[Source: (PDF document|image|url|youtube) ([a-f0-9]+)\]/g;
+    let match;
+    const foundSources: Array<{ fullMatch: string; type: string; identifier: string }> = [];
+    
+    // First pass: find all sources
+    while ((match = sourceRegex.exec(content)) !== null) {
+      foundSources.push({ fullMatch: match[0], type: match[1], identifier: match[2] });
+    }
+
+    if (foundSources.length === 0) {
+      return { processedContent: content, sources: [] };
+    }
+
+    const uniqueSources: Array<{ number: number; text: string; type: string; identifier: string }> = [];
+    const sourceMap = new Map<string, number>();
+    let processedContent = content;
+    let citationCounter = 1;
+
+    foundSources.forEach(source => {
+      const sourceKey = `${source.type}:${source.identifier}`;
+      let citationNumber: number;
+
+      if (sourceMap.has(sourceKey)) {
+        citationNumber = sourceMap.get(sourceKey)!;
+      } else {
+        citationNumber = citationCounter++;
+        sourceMap.set(sourceKey, citationNumber);
+        uniqueSources.push({
+          number: citationNumber,
+          text: `${source.type === 'PDF document' ? 'PDF' : source.type.charAt(0).toUpperCase() + source.type.slice(1)}: ${source.identifier.substring(0, 12)}...`, // Shorten identifier for display
+          type: source.type,
+          identifier: source.identifier
+        });
+      }
+      // Replace only the first occurrence of this specific fullMatch to avoid issues with identical sources in different places
+      // This is a simplification; a more robust approach might involve replacing based on match indices if content could have identical [Source:...] strings that are meant to be distinct.
+      // However, for typical RAG outputs where a source is cited multiple times, this should correctly use the same number.
+      processedContent = processedContent.replace(
+        source.fullMatch,
+        `<a href="#source_item_${messageId}_${citationNumber}" style="text-decoration: none; color: inherit; cursor: pointer;"><sup>${citationNumber}</sup></a>`
+      );
+    });
+    
+    let sourcesSection = `\n\n---\n<div id="sources_list_${messageId}">\n\n**Sources:**\n`;
+    uniqueSources.sort((a,b) => a.number - b.number).forEach(source => {
+      // Using div for each source item to ensure the ID works correctly for navigation
+      sourcesSection += `<div id="source_item_${messageId}_${source.number}">${source.number}. ${source.text}</div>\n`;
+    });
+    sourcesSection += "\n</div>"
+
+    return { processedContent: processedContent + sourcesSection, sources: uniqueSources };
+  };
+
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -79,11 +136,35 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     ul: ({ children }) => <ul className="list-disc pl-5 mb-2">{children}</ul>,
     ol: ({ children }) => <ol className="list-decimal pl-5 mb-2">{children}</ol>,
     li: ({ children }) => <li className="mb-1">{children}</li>,
-    a: ({ href, children }) => (
-      <a href={href} target="_blank" rel="noopener noreferrer" className="text-purple-300 underline">
-        {children}
-      </a>
-    ),
+    a: ({ node, href, children, ...props }) => {
+      if (href && href.startsWith('#')) {
+        // Internal link for citations
+        return (
+          <a
+            href={href}
+            {...props}
+            onClick={(e: React.MouseEvent<HTMLAnchorElement>) => {
+              e.preventDefault();
+              const targetId = href.substring(1); // Remove #
+              const targetElement = document.getElementById(targetId);
+              if (targetElement) {
+                targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }
+            }}
+            // style from formatMessageWithCitations is already applied via rehypeRaw
+            // but we can ensure cursor pointer here if needed, though it should be inherited
+          >
+            {children}
+          </a>
+        );
+      }
+      // External link
+      return (
+        <a href={href} target="_blank" rel="noopener noreferrer" {...props} className="text-purple-300 underline">
+          {children}
+        </a>
+      );
+    },
     code: ({ children }) => <code className="bg-black/40 px-1 py-0.5 rounded">{children}</code>,
     strong: ({ children }) => <strong className="font-semibold text-purple-300">{children}</strong>,
   };
@@ -222,10 +303,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 <div className="prose prose-invert prose-sm max-w-none latex-container">
                   <ReactMarkdown
                     remarkPlugins={[remarkMath]}
-                    rehypePlugins={[[rehypeKatex, { throwOnError: false, strict: false, output: 'html' }]]}
+                    rehypePlugins={[[rehypeKatex, { throwOnError: false, strict: false, output: 'html' }], rehypeRaw]} // Add rehypeRaw here
                     components={markdownComponents}
                   >
-                    {message.content}
+                    {message.role === 'assistant' ? formatMessageWithCitations(message.content, index).processedContent : message.content}
                   </ReactMarkdown>
                 </div>
               </LaTeXErrorBoundary>
