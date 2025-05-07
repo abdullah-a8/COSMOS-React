@@ -69,6 +69,51 @@ app.include_router(gmail.router, prefix=f"{settings.API_V1_STR}/gmail", tags=["g
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
 FRONTEND_DIST_DIR = os.path.join(PROJECT_ROOT, "frontend", "dist")
 
+# Add specific route for favicon
+@app.get("/favicon.ico")
+async def get_favicon():
+    """Serve favicon.ico from the frontend dist directory."""
+    favicon_path = os.path.join(FRONTEND_DIST_DIR, "favicon.ico")
+    if os.path.exists(favicon_path):
+        return FileResponse(
+            favicon_path, 
+            media_type="image/x-icon",
+            headers={
+                "Cache-Control": "public, max-age=31536000, immutable",
+                "Pragma": "public"
+            }
+        )
+    
+    # Fall back to cosmos_app.png if favicon.ico doesn't exist
+    favicon_path = os.path.join(FRONTEND_DIST_DIR, "cosmos_app.png")
+    if os.path.exists(favicon_path):
+        return FileResponse(
+            favicon_path, 
+            media_type="image/png",
+            headers={
+                "Cache-Control": "public, max-age=31536000, immutable",
+                "Pragma": "public"
+            }
+        )
+    
+    raise HTTPException(status_code=404, detail="Favicon not found")
+
+# Also handle direct requests to cosmos_app.png
+@app.get("/cosmos_app.png")
+async def get_app_icon():
+    """Serve cosmos_app.png from the frontend dist directory."""
+    icon_path = os.path.join(FRONTEND_DIST_DIR, "cosmos_app.png")
+    if os.path.exists(icon_path):
+        return FileResponse(
+            icon_path, 
+            media_type="image/png",
+            headers={
+                "Cache-Control": "public, max-age=31536000, immutable",
+                "Pragma": "public"
+            }
+        )
+    raise HTTPException(status_code=404, detail="App icon not found")
+
 app.mount("/assets", StaticFiles(directory=os.path.join(FRONTEND_DIST_DIR, "assets"), html=False), name="assets")
 
 # Serve index.html for the root path
@@ -82,6 +127,46 @@ async def serve_root_react_app():
 # Serve index.html for all other paths (client-side routing)
 @app.get("/{full_path:path}")
 async def serve_react_app(full_path: str):
+    # Check if requesting a static file first
+    if full_path.endswith(('.js', '.css', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.woff', '.woff2', '.ttf', '.eot')):
+        static_file_path = os.path.join(FRONTEND_DIST_DIR, full_path)
+        if os.path.exists(static_file_path):
+            # Determine MIME type based on file extension
+            media_type = None
+            if full_path.endswith('.js'):
+                media_type = 'application/javascript'
+            elif full_path.endswith('.css'):
+                media_type = 'text/css'
+            elif full_path.endswith('.png'):
+                media_type = 'image/png'
+            elif full_path.endswith('.jpg') or full_path.endswith('.jpeg'):
+                media_type = 'image/jpeg'
+            elif full_path.endswith('.gif'):
+                media_type = 'image/gif'
+            elif full_path.endswith('.svg'):
+                media_type = 'image/svg+xml'
+            elif full_path.endswith('.ico'):
+                media_type = 'image/x-icon'
+            elif full_path.endswith('.woff'):
+                media_type = 'font/woff'
+            elif full_path.endswith('.woff2'):
+                media_type = 'font/woff2'
+            elif full_path.endswith('.ttf'):
+                media_type = 'font/ttf'
+            elif full_path.endswith('.eot'):
+                media_type = 'application/vnd.ms-fontobject'
+                
+            # Return file with appropriate cache headers for static assets
+            return FileResponse(
+                static_file_path,
+                media_type=media_type,
+                headers={
+                    "Cache-Control": "public, max-age=31536000, immutable",
+                    "Pragma": "public"
+                }
+            )
+    
+    # Otherwise serve index.html for client-side routing
     index_html_path = os.path.join(FRONTEND_DIST_DIR, "index.html")
     if os.path.exists(index_html_path):
         return FileResponse(index_html_path)
