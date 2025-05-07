@@ -8,7 +8,7 @@ import ChatInterface from '../components/rag-chatbot/ChatInterface';
 import { useRagChatbot } from '../hooks/useRagChatbot';
 import { models } from '../utils/models';
 import { useDevice } from '../hooks/useDevice';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, MotionConfig } from 'framer-motion';
 
 const RagChatbot: React.FC = () => {
   const { isMobile } = useDevice();
@@ -101,92 +101,94 @@ const RagChatbot: React.FC = () => {
   };
 
   return (
-    <div className="relative min-h-screen">
-      <div className={`${isMobile ? 'pt-20 pb-6' : 'pt-32 pb-12'}`}>
-        {/* Settings toggle button - hidden when mobile nav is open */}
-        {!isMobileNavOpen && (
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={toggleSidebar}
-            className={`fixed ${isMobile ? 'bottom-6 left-6 z-40' : `${isMobile ? 'top-20' : 'top-32'} left-4 z-40`} bg-black/50 backdrop-blur-sm border-white/10 text-white hover:bg-purple-900/50 transition-all duration-300 ease-in-out 
-            ${!isMobile && isSidebarOpen ? 'left-80 ml-4' : ''}`}
-            aria-label={isSidebarOpen ? "Close settings" : "Open settings"}
-          >
-            {isMobile ? (
-              <Settings className="h-5 w-5" />
-            ) : (
-              isSidebarOpen ? <PanelLeft className="h-5 w-5" /> : <PanelRight className="h-5 w-5" />
-            )}
-          </Button>
-        )}
-
-        {/* Wrap settings in AnimatePresence for proper animation handling */}
-        <AnimatePresence>
-          <SettingsSidebar
-            isOpen={isSidebarOpen}
-            models={models}
-            selectedModels={selectedModels}
-            onModelsChange={setSelectedModels}
-            temperature={temperature}
-            onTemperatureChange={setTemperature}
-            chunkSize={chunkSize}
-            onChunkSizeChange={setChunkSize}
-            chunkOverlap={chunkOverlap}
-            onChunkOverlapChange={setChunkOverlap}
-            onResetSettings={resetSettings}
-            onResetChat={handleResetChat}
-            onClose={toggleSidebar}
-          />
-        </AnimatePresence>
-
-        <main className={`flex-1 ${isMobile ? 'p-3' : 'p-4 md:p-8'} transition-all duration-300 ${!isMobile && isSidebarOpen ? "md:ml-80" : "ml-0"}`}>
-          <div className={`${isMobile ? 'mx-0' : 'max-w-4xl mx-auto'}`}>
-            <div className={`${isMobile ? 'mb-4' : 'mb-8'}`}>
-              <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl md:text-4xl'} font-bold mb-2 flex items-center text-white`}>
-                {isMobile ? 'RAG Chatbot' : 'RAG-Powered Knowledge Chatbot'}
-                <span className="ml-2 text-purple-400">
-                  <Database className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8'}`} />
-                </span>
-              </h1>
-              {!isMobile && (
-                <p className="text-lg text-gray-300">
-                  Upload documents, images, or websites, then chat with AI about their content using the power of Retrieval-Augmented Generation.
-                </p>
+    <MotionConfig reducedMotion="user">
+      <div className="relative min-h-screen">
+        <div className={`${isMobile ? 'pt-20 pb-6' : 'pt-32 pb-12'}`}>
+          {/* Settings toggle button - hidden when mobile nav is open */}
+          {!isMobileNavOpen && (
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={toggleSidebar}
+              className={`fixed ${isMobile ? 'bottom-6 left-6 z-40' : `${isMobile ? 'top-20' : 'top-32'} left-4 z-40`} bg-black/50 backdrop-blur-sm border-white/10 text-white hover:bg-purple-900/50 transition-all duration-300 ease-in-out 
+              ${!isMobile && isSidebarOpen ? 'left-80 ml-4' : ''}`}
+              aria-label={isSidebarOpen ? "Close settings" : "Open settings"}
+            >
+              {isMobile ? (
+                <Settings className="h-5 w-5" />
+              ) : (
+                isSidebarOpen ? <PanelLeft className="h-5 w-5" /> : <PanelRight className="h-5 w-5" />
               )}
-            </div>
+            </Button>
+          )}
 
-            <ContentUpload
-              uploadMethod={uploadMethod}
-              onUploadMethodChange={handleUploadMethodChange}
-              file={file}
-              onFileChange={handleFileChange}
-              url={url}
-              onUrlChange={handleUrlChange}
-              onSubmit={handleContentUpload}
-              isProcessing={isProcessing}
+          {/* Wrap settings in AnimatePresence for proper animation handling */}
+          <AnimatePresence initial={false}>
+            <SettingsSidebar
+              isOpen={isSidebarOpen}
+              models={models}
+              selectedModels={selectedModels}
+              onModelsChange={setSelectedModels}
+              temperature={temperature}
+              onTemperatureChange={setTemperature}
+              chunkSize={chunkSize}
+              onChunkSizeChange={setChunkSize}
+              chunkOverlap={chunkOverlap}
+              onChunkOverlapChange={setChunkOverlap}
+              onResetSettings={resetSettings}
+              onResetChat={handleResetChat}
+              onClose={toggleSidebar}
             />
+          </AnimatePresence>
 
-            {uploadStatus !== 'idle' && (
-              <UploadStatus
-                status={uploadStatus}
-                elapsedTime={elapsedTime}
-                statusMessage={statusMessage}
+          <main className={`flex-1 ${isMobile ? 'p-3' : 'p-4 md:p-8'} transition-all duration-300 ${!isMobile && isSidebarOpen ? "md:ml-80" : "ml-0"}`}>
+            <div className={`${isMobile ? 'mx-0' : 'max-w-4xl mx-auto'}`}>
+              <div className={`${isMobile ? 'mb-4' : 'mb-8'}`}>
+                <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl md:text-4xl'} font-bold mb-2 flex items-center text-white`}>
+                  {isMobile ? 'RAG Chatbot' : 'RAG-Powered Knowledge Chatbot'}
+                  <span className="ml-2 text-purple-400">
+                    <Database className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8'}`} />
+                  </span>
+                </h1>
+                {!isMobile && (
+                  <p className="text-lg text-gray-300">
+                    Upload documents, images, or websites, then chat with AI about their content using the power of Retrieval-Augmented Generation.
+                  </p>
+                )}
+              </div>
+
+              <ContentUpload
+                uploadMethod={uploadMethod}
+                onUploadMethodChange={handleUploadMethodChange}
+                file={file}
+                onFileChange={handleFileChange}
+                url={url}
+                onUrlChange={handleUrlChange}
+                onSubmit={handleContentUpload}
+                isProcessing={isProcessing}
               />
-            )}
 
-            <ChatInterface
-              messages={messages}
-              onSendMessage={handleSendMessage}
-              isProcessing={isProcessing}
-              isQueryProcessing={isQueryProcessing}
-              sourceFilters={sourceFilters}
-              onSourceFiltersChange={setSourceFilters}
-            />
-          </div>
-        </main>
+              {uploadStatus !== 'idle' && (
+                <UploadStatus
+                  status={uploadStatus}
+                  elapsedTime={elapsedTime}
+                  statusMessage={statusMessage}
+                />
+              )}
+
+              <ChatInterface
+                messages={messages}
+                onSendMessage={handleSendMessage}
+                isProcessing={isProcessing}
+                isQueryProcessing={isQueryProcessing}
+                sourceFilters={sourceFilters}
+                onSourceFiltersChange={setSourceFilters}
+              />
+            </div>
+          </main>
+        </div>
       </div>
-    </div>
+    </MotionConfig>
   );
 };
 

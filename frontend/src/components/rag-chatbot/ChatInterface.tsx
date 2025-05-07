@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Send, Settings, FileText, Link as LinkIcon, Video, Loader2, MessageSquare, Image } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence} from 'framer-motion';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import rehypeRaw from 'rehype-raw'; // Import rehype-raw
@@ -196,72 +196,84 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       <AnimatePresence>
         {filtersOpen && (
           <motion.div 
-            className="p-4 bg-black/30 border-b border-purple-700/20"
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
+            className="bg-black/30 border-b border-purple-700/20 overflow-hidden"
+            initial={{ opacity: 0, height: 0, y: -10 }}
+            animate={{ opacity: 1, height: 'auto', y: 0 }}
+            exit={{ opacity: 0, height: 0, y: -10 }}
             transition={{ duration: 0.3 }}
           >
-            <h3 className="text-sm font-medium mb-3 text-white">Knowledge Source Filters</h3>
-            <div className="flex flex-wrap gap-2">
-              <motion.button
-                onClick={() => toggleFilter('pdf')}
-                className={`flex items-center px-3 py-1.5 rounded-md text-sm transition-colors ${
-                  sourceFilters.pdf
-                    ? 'bg-purple-600/80 text-white'
-                    : 'bg-white/5 text-white/60 hover:bg-white/10'
-                }`}
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-              >
-                <FileText className="h-4 w-4 mr-2" />
-                PDF Documents
-              </motion.button>
-              <motion.button
-                onClick={() => toggleFilter('url')}
-                className={`flex items-center px-3 py-1.5 rounded-md text-sm transition-colors ${
-                  sourceFilters.url
-                    ? 'bg-purple-600/80 text-white'
-                    : 'bg-white/5 text-white/60 hover:bg-white/10'
-                }`}
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-              >
-                <LinkIcon className="h-4 w-4 mr-2" />
-                Web Articles
-              </motion.button>
-              <motion.button
-                onClick={() => toggleFilter('youtube')}
-                className={`flex items-center px-3 py-1.5 rounded-md text-sm transition-colors ${
-                  sourceFilters.youtube
-                    ? 'bg-purple-600/80 text-white'
-                    : 'bg-white/5 text-white/60 hover:bg-white/10'
-                }`}
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-              >
-                <Video className="h-4 w-4 mr-2" />
-                YouTube Transcripts
-              </motion.button>
-              <motion.button
-                onClick={() => toggleFilter('image')}
-                className={`flex items-center px-3 py-1.5 rounded-md text-sm transition-colors ${
-                  sourceFilters.image
-                    ? 'bg-purple-600/80 text-white'
-                    : 'bg-white/5 text-white/60 hover:bg-white/10'
-                }`}
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-              >
-                <Image className="h-4 w-4 mr-2" />
-                Images (OCR)
-              </motion.button>
+            <div className="p-4">
+              <h3 className="text-sm font-medium mb-3 text-white">Knowledge Source Filters</h3>
+              <div className="flex flex-wrap gap-2">
+                <motion.button
+                  onClick={() => toggleFilter('pdf')}
+                  className={`flex items-center px-3 py-1.5 rounded-md text-sm transition-colors ${
+                    sourceFilters.pdf
+                      ? 'bg-purple-600/80 text-white'
+                      : 'bg-white/5 text-white/60 hover:bg-white/10'
+                  }`}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  PDF Documents
+                </motion.button>
+                <motion.button
+                  onClick={() => toggleFilter('url')}
+                  className={`flex items-center px-3 py-1.5 rounded-md text-sm transition-colors ${
+                    sourceFilters.url
+                      ? 'bg-purple-600/80 text-white'
+                      : 'bg-white/5 text-white/60 hover:bg-white/10'
+                  }`}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <LinkIcon className="h-4 w-4 mr-2" />
+                  Web Articles
+                </motion.button>
+                <motion.button
+                  onClick={() => toggleFilter('youtube')}
+                  className={`flex items-center px-3 py-1.5 rounded-md text-sm transition-colors ${
+                    sourceFilters.youtube
+                      ? 'bg-purple-600/80 text-white'
+                      : 'bg-white/5 text-white/60 hover:bg-white/10'
+                  }`}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <Video className="h-4 w-4 mr-2" />
+                  YouTube Transcripts
+                </motion.button>
+                <motion.button
+                  onClick={() => toggleFilter('image')}
+                  className={`flex items-center px-3 py-1.5 rounded-md text-sm transition-colors ${
+                    sourceFilters.image
+                      ? 'bg-purple-600/80 text-white'
+                      : 'bg-white/5 text-white/60 hover:bg-white/10'
+                  }`}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <Image className="h-4 w-4 mr-2" />
+                  Images (OCR)
+                </motion.button>
+              </div>
+              
+              {!sourceFilters.pdf && !sourceFilters.url && !sourceFilters.youtube && !sourceFilters.image && (
+                <motion.p 
+                  className="text-amber-300 text-xs mt-2 flex items-center"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <span className="mr-1">⚠️</span> Please select at least one knowledge source type
+                </motion.p>
+              )}
             </div>
-            {!sourceFilters.pdf && !sourceFilters.url && !sourceFilters.youtube && !sourceFilters.image && (
-              <p className="text-amber-300 text-xs mt-2 flex items-center">
-                <span className="mr-1">⚠️</span> Please select at least one knowledge source type
-              </p>
-            )}
           </motion.div>
         )}
       </AnimatePresence>
