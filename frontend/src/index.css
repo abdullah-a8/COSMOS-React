@@ -2,6 +2,82 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Mobile Optimizations */
+* {
+  -webkit-tap-highlight-color: transparent; /* Prevents blue highlight on tap for mobile */
+}
+
+/* Improve scrolling on mobile */
+html, body {
+  overflow-x: hidden; /* Prevent horizontal scrolling */
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+}
+
+/* Fix for mobile viewport height issue (100vh) */
+@supports (-webkit-touch-callout: none) {
+  .min-h-screen {
+    min-height: -webkit-fill-available;
+  }
+}
+
+/* Prevents iOS zoom when focusing on inputs */
+@media (max-width: 768px) {
+  input, textarea, select, button {
+    font-size: 16px;
+  }
+  
+  /* Improve touch target sizes on mobile */
+  button, 
+  [role="button"],
+  a {
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+}
+
+/* Smooth animations */
+.animate-in {
+  animation-duration: 300ms;
+  animation-timing-function: ease-out;
+  animation-fill-mode: both;
+}
+
+/* Better focus styles for accessibility */
+:focus-visible {
+  outline: 2px solid rgba(139, 92, 246, 0.5);
+  outline-offset: 2px;
+}
+
+/* For screen readers only */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Utility classes for mobile-specific elements */
+.touch-target {
+  @apply min-h-[44px] min-w-[44px] flex items-center justify-center;
+}
+
+.mobile-card {
+  @apply rounded-xl p-4 backdrop-blur-sm;
+}
+
+.mobile-bottom-safe {
+  padding-bottom: env(safe-area-inset-bottom, 16px);
+}
+
+.mobile-top-safe {
+  padding-top: env(safe-area-inset-top, 16px);
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
