@@ -1,21 +1,16 @@
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { SparklesCore } from './components/sparkles';
 import Navbar from './components/navbar';
 import Home from './pages/Home';
 import RagChatbot from './pages/RagChatbot';
 import YouTubeProcessor from './pages/YouTubeProcessor';
 import GmailResponder from './pages/GmailResponder';
-import AuthPage from './pages/AuthPage';
 import { RoboAnimation } from './components/robo-animation';
 import { useDevice } from './hooks/useDevice';
 import { useEffect } from 'react';
 
 function App() {
-  const { isMobile } = useDevice();
-  const location = useLocation();
-  
-  // Check if we're on the auth page
-  const isAuthPage = location.pathname === '/auth';
+  const { isMobile} = useDevice();
   
   // Set proper viewport meta tag for mobile devices
   useEffect(() => {
@@ -50,28 +45,25 @@ function App() {
       </div>
 
       <div className="relative z-10 min-h-screen flex flex-col overflow-x-hidden">
-        {/* Only show Navbar when not on the auth page */}
-        {!isAuthPage && <Navbar />}
-        
-        <div className={`flex-1 flex flex-col ${!isAuthPage ? 'mt-16' : ''}`}>
+        <Navbar />
+        <div className="flex-1 flex flex-col">
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/rag-chatbot" element={<RagChatbot />} />
             <Route path="/youtube-processor" element={<YouTubeProcessor />} />
             <Route path="/gmail-responder" element={<GmailResponder />} />
-            <Route path="/auth" element={<AuthPage />} />
           </Routes>
         </div>
 
-        {/* Animated robot - Only shown on non-mobile devices and not on auth page */}
-        {!isMobile && !isAuthPage && (
+        {/* Animated robot - Only shown on non-mobile devices */}
+        {!isMobile && (
           <div className="fixed bottom-4 right-4 w-64 h-64 z-10 pointer-events-none">
             <RoboAnimation />
           </div>
         )}
         
-        {/* Mobile footer - only shown when not on auth page */}
-        {isMobile && !isAuthPage && (
+        {/* Mobile footer */}
+        {isMobile && (
           <footer className="mt-auto py-4 px-4 text-center text-gray-500 text-xs">
             <p>© 2025 COSMOS AI. All rights reserved.</p>
           </footer>

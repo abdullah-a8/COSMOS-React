@@ -9,8 +9,6 @@ from langchain_pinecone import Pinecone
 from langchain_openai import OpenAIEmbeddings
 import os
 from functools import lru_cache
-from fastapi import Request, HTTPException, status, Depends
-from .core.auth import SESSION_TOKEN_NAME, ACTIVE_SESSIONS
 
 logger = logging.getLogger(__name__)
 
@@ -78,32 +76,3 @@ async def get_cosmos_connector() -> AsyncGenerator[CosmosConnector, None]:
     """Dependency function that yields the singleton CosmosConnector instance."""
     # Yield the instance created within this module
     yield _singleton_cosmos_connector_instance 
-
-# Additional auth dependency for API endpoints
-async def verify_beta_access(request: Request):
-    """
-    Dependency to verify beta access is authorized.
-    This adds a secondary layer of auth on top of the middleware.
-    """
-    session_token = request.cookies.get(SESSION_TOKEN_NAME)
-    
-    # Check if token exists at all
-    if not session_token:
-        logger.warning(f"Missing session token in API request from {request.client.host}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    
-    # Check if token is in active sessions (works with both old and new session structure)
-    if session_token not in ACTIVE_SESSIONS:
-        logger.warning(f"Invalid session token in API request from {request.client.host}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    
-    # If we get here, the session is valid
-    return True 

@@ -23,10 +23,9 @@ app = FastAPI(
     title=settings.PROJECT_NAME,
     description=settings.PROJECT_DESCRIPTION,
     version=settings.PROJECT_VERSION,
-    # Only expose API docs in development environment
-    openapi_url=f"{settings.API_V1_STR}/openapi.json" if settings.ENVIRONMENT.lower() != "production" else None,
-    docs_url=f"{settings.API_V1_STR}/docs" if settings.ENVIRONMENT.lower() != "production" else None,
-    redoc_url=f"{settings.API_V1_STR}/redoc" if settings.ENVIRONMENT.lower() != "production" else None,
+    openapi_url=f"{settings.API_V1_STR}/openapi.json",
+    docs_url=f"{settings.API_V1_STR}/docs",
+    redoc_url=f"{settings.API_V1_STR}/redoc",
 )
 
 # Configure middleware
@@ -43,19 +42,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Add security headers middleware
-@app.middleware("http")
-async def add_security_headers(request: Request, call_next):
-    response = await call_next(request)
-    # Only add in production mode
-    if settings.ENVIRONMENT.lower() == "production":
-        response.headers["X-Content-Type-Options"] = "nosniff"
-        response.headers["X-Frame-Options"] = "DENY"
-        response.headers["X-XSS-Protection"] = "1; mode=block"
-        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
-        response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'"
-    return response
 
 # Add Beta Authentication middleware
 app.add_middleware(BetaAuthMiddleware)
@@ -88,21 +74,9 @@ app.include_router(gmail.router, prefix=f"{settings.API_V1_STR}/gmail", tags=["g
 # Add a route to handle the login form submission
 @app.post("/cosmos-auth")
 async def handle_auth_form(request: Request):
-    """This route handles the login form submission, which is then processed by the auth middleware.
-    If this endpoint returns a response directly, it means the middleware didn't handle the request.
-    """
-    # Import here to avoid circular imports
-    from fastapi.responses import JSONResponse
-    
-    # Log the error - this endpoint should never directly return a response
-    # as the auth middleware should intercept the request first
-    logger.error("Auth middleware failed to handle /cosmos-auth request")
-    
-    # Return a proper error response for production
-    return JSONResponse(
-        content={"error": "Authentication system error"},
-        status_code=500
-    )
+    """This route handles the login form submission"""
+    from fastapi.responses import PlainTextResponse
+    return PlainTextResponse("Authentication handled by middleware. If you see this message, something went wrong.", status_code=500)
 
 # --- Serve React Frontend Static Files ---
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))

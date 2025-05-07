@@ -16,17 +16,14 @@ from ..models.gmail import (
     EmailModifyResponse
 )
 # Use the shared connector dependency
-from ..dependencies import get_cosmos_connector, verify_beta_access
+from ..dependencies import get_cosmos_connector 
 from ..services.cosmos_connector import CosmosConnector
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
 # Dependency to ensure Gmail agent is available before accessing related endpoints
-async def get_gmail_cosmos_connector(
-    cosmos: CosmosConnector = Depends(get_cosmos_connector),
-    _: bool = Depends(verify_beta_access)
-) -> CosmosConnector:
+async def get_gmail_cosmos_connector(cosmos: CosmosConnector = Depends(get_cosmos_connector)) -> CosmosConnector:
     if not cosmos.has_gmail:
         logger.warning("Attempted to access Gmail endpoint, but Gmail agent is not available.")
         raise HTTPException(
@@ -39,10 +36,7 @@ async def get_gmail_cosmos_connector(
             response_model=GmailAuthUrlResponse,
             summary="Get Gmail OAuth Authorization URL", 
             status_code=status.HTTP_200_OK)
-async def get_gmail_auth_url(
-    connector: CosmosConnector = Depends(get_cosmos_connector),
-    _: bool = Depends(verify_beta_access)
-):
+async def get_gmail_auth_url(connector: CosmosConnector = Depends(get_cosmos_connector)):
     """
     Generates and returns the URL for the user to authorize the application 
     to access their Gmail account.
