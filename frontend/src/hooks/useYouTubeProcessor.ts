@@ -59,7 +59,7 @@ export function useYouTubeProcessor({ chunkSize, chunkOverlap }: UseYouTubeProce
       // Display processing message
       console.log("Processing transcript. This may take 1-2 minutes...");
 
-      const response = await fetch(`/api/youtube/process`, {
+      const response = await fetch(`/api/v1/youtube/process`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
