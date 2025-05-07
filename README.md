@@ -97,7 +97,7 @@ These extensions are built using pybind11 for seamless Python integration and im
 
 ### Prerequisites
 
-- Python 3.13.2+
+- Python 3.13 (as specified in `.python-version`)
 - Pip (Python package installer)
 - Git
 - C++ compiler (GCC/Clang for Linux/macOS, MSVC for Windows)
@@ -121,6 +121,7 @@ These extensions are built using pybind11 for seamless Python integration and im
     ```
 
 2.  **Set Up Virtual Environment**: (Recommended)
+    It's good practice to create a virtual environment to manage project dependencies.
     ```bash
     python -m venv .venv
     source .venv/bin/activate  # Linux/macOS
@@ -128,13 +129,28 @@ These extensions are built using pybind11 for seamless Python integration and im
     .venv\Scripts\activate  # Windows
     ```
 
-3.  **Install Dependencies**:
+3.  **Install Python Dependencies**:
+    Install all necessary Python packages listed in `requirements.txt`.
     ```bash
     pip install -r requirements.txt
     ```
 
-4.  **Configure Environment Variables**:
-    Create a file named `.env` in the project root directory and add your API keys and Pinecone details. The application uses the `python-dotenv` library to load these variables.
+4.  **Install Frontend Dependencies & Build (if applicable for local development)**:
+    The frontend is a React application. For local development or to build it manually:
+    ```bash
+    cd frontend
+    npm install --legacy-peer-deps 
+    # To run the development server (usually on http://localhost:3000):
+    # npm start
+    # To build the static assets:
+    # npm run build
+    cd ..
+    ```
+    *Note: The root `package.json` contains a `heroku-postbuild` script (`"cd frontend && npm install --include=dev --legacy-peer-deps && npm run build"`) which automates this process for Heroku deployments.*
+
+5.  **Configure Environment Variables**:
+    Create a file named `.env` in the project root directory. This file is used by `python-dotenv` to load your sensitive API keys and configuration settings.
+    Add the following, replacing the placeholder values with your actual credentials:
     ```dotenv
     OPENAI_API_KEY="your_openai_api_key"
     GROQ_API_KEY="your_groq_api_key"
@@ -143,7 +159,7 @@ These extensions are built using pybind11 for seamless Python integration and im
     ```
     **Important**: Ensure your Pinecone index is configured with **3072 dimensions** to match the `text-embedding-3-large` model used for OpenAI embeddings.
 
-5.  **Configure Beta Authentication** (Recommended for Production):
+6.  **Configure Beta Authentication** (Recommended for Production):
     The application includes a "Closed Beta" authentication system to protect your API endpoints from unauthorized access. By default, it uses a simple password protection system with the following settings:
     
     ```dotenv
@@ -154,7 +170,7 @@ These extensions are built using pybind11 for seamless Python integration and im
     
     When enabled, users will be presented with a password protection screen before accessing any part of the application. The session expires after 60 minutes, requiring re-authentication. This helps prevent abuse of your API endpoints while in beta testing.
 
-6.  **Build C++ Extensions** (Optional but Recommended):
+7.  **Build C++ Extensions** (Optional but Recommended):
     These extensions improve performance for text chunking, PDF extraction, and hashing. Build them *after* installing system dependencies:
     ```bash
     cd cpp_extensions
@@ -169,7 +185,7 @@ These extensions are built using pybind11 for seamless Python integration and im
     ```
     The application uses an `__init__.py` in `core/cpp_modules/` to dynamically load these extensions if available, falling back to pure Python implementations otherwise.
 
-7.  **Set Up Gmail Credentials**:
+8.  **Set Up Gmail Credentials**:
     - Create a `credentials` directory in the project root if it doesn't exist: `mkdir -p credentials`
     - Place the `credentials.json` file you downloaded from Google Cloud inside this directory.
     - **Rename** the file to `.gmail_credentials.json`. (The leading dot helps keep it slightly hidden and matches the code).
@@ -180,18 +196,19 @@ These extensions are built using pybind11 for seamless Python integration and im
 The application now consists of a React frontend, a FastAPI backend, and a standalone Streamlit page for the Gmail agent.
 
 1.  **Start the Backend API**:
-    Navigate to the project root directory in your terminal and run the FastAPI server (adjust host and port if needed):
+    Navigate to the project root directory in your terminal. The FastAPI application is located at `api/app/main.py`. Run the Uvicorn server:
     ```bash
-    uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
+    uvicorn api.app.main:app --reload --host 0.0.0.0 --port 8000
     ```
-    The API documentation will typically be available at `http://localhost:8000/docs`.
+    The API documentation (Swagger UI) will typically be available at `http://localhost:8000/docs`.
 
 2.  **Start the Frontend**:
-    Open a *new* terminal window/tab, navigate to the `frontend` directory, install dependencies (if first time), and start the development server:
+    Open a *new* terminal window/tab. Navigate to the `frontend` directory, ensure dependencies are installed (`npm install --legacy-peer-deps`), and then start the React development server:
     ```bash
     cd frontend
-    npm install  # Run only if you haven't installed dependencies yet
+    npm install --legacy-peer-deps
     npm start
+    cd ..
     ```
     This will usually open the application in your default web browser, often at `http://localhost:3000`. Access the RAG Chatbot and YouTube Processor here.
 
@@ -259,37 +276,47 @@ The modular structure (`core/agents/`) is designed for extension. To add a new a
 
 ```
 COSMOS/
-├── frontend/               # React frontend source code
+├── frontend/               # React frontend source code (Next.js)
+│   ├── // (standard Next.js project structure, e.g., pages, components, public)
+│   └── package.json        # Frontend npm dependencies and scripts
 ├── api/                    # FastAPI backend source code
-│   └── main.py             # Example main API file
+│   ├── app/                # Main application logic for FastAPI
+│   │   └── main.py         # FastAPI application instance
+│   ├── requirements.txt    # Python dependencies specific to the api (if any, else merged to root)
+│   └── run.py              # (Potentially a helper script for running the API, verify its use)
 ├── pages/
-│   └── 3_Gmail_Agent.py     # UI for Gmail integration (Streamlit)
+│   └── 3_Gmail_Agent.py    # UI for Gmail integration (Streamlit)
 ├── core/
 │   ├── __init__.py
-│   ├── chain.py             # LangChain setup for LLM interaction (RAG)
-│   ├── data_extraction.py   # Functions for extracting text from sources
-│   ├── processing.py        # Text chunking and metadata enrichment logic
-│   ├── vector_store.py      # Pinecone connection and vector operations
+│   ├── chain.py            # LangChain setup for LLM interaction (RAG)
+│   ├── data_extraction.py  # Functions for extracting text from sources
+│   ├── processing.py       # Text chunking and metadata enrichment logic
+│   ├── vector_store.py     # Pinecone connection and vector operations
 │   └── agents/
 │       ├── __init__.py
-│       └── gmail_logic.py   # Core logic for Gmail agent (API, OpenAI tasks)
+│       └── gmail_logic.py  # Core logic for Gmail agent (API, OpenAI tasks)
 ├── cpp_extensions/         # C++ performance modules
 │   ├── text_chunking/
 │   ├── pdf_extraction/
 │   ├── hash_generation/
-│   ├── setup.py             # Build script for C++ extensions
+│   ├── setup.py            # Build script for C++ extensions
 │   └── CMakeLists.txt
 ├── config/
 │   ├── __init__.py
-│   ├── settings.py          # Default application settings
-│   └── prompts.py           # Prompt templates
-├── credentials/             # Directory for credentials (token, .json) - gitignored
+│   ├── settings.py         # Default application settings
+│   └── prompts.py          # Prompt templates
+├── credentials/            # Directory for credentials (token, .json) - gitignored
 │   └── .gitkeep
-├── requirements.txt         # Python backend dependencies
-├── .env                     # Environment variables - gitignored
-├── .gitignore
-├── LICENSE
-└── README.md               # This documentation file
+├── Images/                 # Banner and other images for README
+├── requirements.txt        # Python backend and core dependencies
+├── .env                    # Environment variables (API keys, etc.) - gitignored
+├── .gitignore              # Specifies intentionally untracked files that Git should ignore
+├── LICENSE                 # Project's license file (MIT License)
+├── README.md               # This documentation file
+├── Procfile                # Heroku deployment: specifies commands run by app's dynos
+├── package.json            # Root npm configuration, mainly for Heroku post-build script
+├── .python-version         # Specifies the target Python version (e.g., for pyenv)
+└── .slug-post-clean        # (Potentially for Heroku slug compilation, verify its use)
 ```
 
 ### Development Guidelines
@@ -298,6 +325,30 @@ COSMOS/
 -   **Documentation**: Add docstrings to new functions/classes and update this README if your changes affect usage or setup.
 -   **Testing**: While formal tests aren't currently implemented, ensure your changes work as expected and don't break existing functionality.
 -   **Dependencies**: Add any new Python dependencies to `requirements.txt` and ensure `python-dotenv` is included.
+
+## Deployment (Example: Heroku)
+
+The project includes a `Procfile` and a root-level `package.json` with a `heroku-postbuild` script, indicating it's set up for deployment on platforms like Heroku.
+
+-   **`Procfile`**: `web: uvicorn api.app.main:app --host 0.0.0.0 --port $PORT`
+    -   This command tells Heroku how to start the web process, running the FastAPI application using Uvicorn. The `$PORT` variable is dynamically assigned by Heroku.
+-   **`package.json` (root level)**:
+    -   The `heroku-postbuild` script (`"cd frontend && npm install --include=dev --legacy-peer-deps && npm run build"`) handles the frontend build process on the Heroku server after dependencies are installed. It navigates to the `frontend` directory, installs npm packages (including dev dependencies needed for the build), and then runs the build script (e.g., `npm run build` for React/Next.js projects).
+-   **Python Version**: The `.python-version` file (e.g., containing `3.13`) helps ensure Heroku uses the correct Python runtime.
+
+To deploy:
+1.  Ensure your application is a Git repository and you have the Heroku CLI installed and logged in.
+2.  Create a Heroku app: `heroku create your-app-name`
+3.  Add necessary buildpacks (e.g., for Python and Node.js if Heroku doesn't detect them automatically):
+    ```bash
+    heroku buildpacks:add heroku/python
+    heroku buildpacks:add heroku/nodejs
+    ```
+    (Order might matter: typically Node.js first if it builds assets used by the Python app, or Python first if it serves Node.js static files. For a separate frontend/backend, it's usually Node.js for frontend build, then Python for the API.)
+4.  Set environment variables in Heroku (e.g., `OPENAI_API_KEY`, `PINECONE_API_KEY`, etc.) via the Heroku dashboard (Settings > Config Vars) or CLI (`heroku config:set KEY=VALUE`).
+5.  Push your code to Heroku: `git push heroku main` (or your default branch).
+
+This is a general guide; specific Heroku configurations might vary.
 
 ## License
 

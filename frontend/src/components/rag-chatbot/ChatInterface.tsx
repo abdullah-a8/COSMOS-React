@@ -4,7 +4,7 @@ import ReactMarkdown from 'react-markdown';
 import { motion, AnimatePresence} from 'framer-motion';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
-import rehypeRaw from 'rehype-raw'; // Import rehype-raw
+import rehypeRaw from 'rehype-raw';
 import 'katex/dist/katex.min.css';
 import type { Components } from 'react-markdown';
 import LaTeXErrorBoundary from './LaTeXErrorBoundary';
@@ -79,9 +79,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           identifier: source.identifier
         });
       }
-      // Replace only the first occurrence of this specific fullMatch to avoid issues with identical sources in different places
-      // This is a simplification; a more robust approach might involve replacing based on match indices if content could have identical [Source:...] strings that are meant to be distinct.
-      // However, for typical RAG outputs where a source is cited multiple times, this should correctly use the same number.
+
       processedContent = processedContent.replace(
         source.fullMatch,
         `<a href="#source_item_${messageId}_${citationNumber}" style="text-decoration: none; color: inherit; cursor: pointer;"><sup>${citationNumber}</sup></a>`
