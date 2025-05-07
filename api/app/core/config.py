@@ -91,6 +91,11 @@ class Settings(BaseSettings):
     QUERY_CACHE_SIZE: int = int(os.getenv("QUERY_CACHE_SIZE", "100"))  # 100 entries default
     QUERY_CACHE_TTL: int = int(os.getenv("QUERY_CACHE_TTL", "300"))  # 5 minutes TTL default
     
+    # Beta Authentication Settings
+    BETA_ENABLED: bool = True
+    BETA_PASSWORD: str = os.getenv("COSMOS_BETA_PASSWORD", "CosmosClosedBeta2025")
+    BETA_SESSION_TIMEOUT: int = 60 * 60  # 60 minutes in seconds
+    
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, extra='ignore')
 
     @field_validator('SECRET_KEY', mode='before')

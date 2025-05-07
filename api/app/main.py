@@ -1,11 +1,13 @@
-from fastapi import FastAPI, HTTPException # Added HTTPException for 404 handling
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles # Added StaticFiles to serve static assets
-from fastapi.responses import FileResponse # Added FileResponse to serve index.html
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 import logging
-import os # Added os for path manipulation
+import os
+from fastapi import Request
 
 from .core.config import settings
+from .core.auth import BetaAuthMiddleware
 from .routers import rag, youtube, gmail
 from .dependencies import get_vector_store_singleton, get_embeddings_singleton
 
@@ -21,12 +23,13 @@ app = FastAPI(
     title=settings.PROJECT_NAME,
     description=settings.PROJECT_DESCRIPTION,
     version=settings.PROJECT_VERSION,
-    openapi_url=f"{settings.API_V1_STR}/openapi.json",
-    docs_url=f"{settings.API_V1_STR}/docs",
-    redoc_url=f"{settings.API_V1_STR}/redoc",
+    # Only expose API docs in development environment
+    openapi_url=f"{settings.API_V1_STR}/openapi.json" if settings.ENVIRONMENT.lower() != "production" else None,
+    docs_url=f"{settings.API_V1_STR}/docs" if settings.ENVIRONMENT.lower() != "production" else None,
+    redoc_url=f"{settings.API_V1_STR}/redoc" if settings.ENVIRONMENT.lower() != "production" else None,
 )
 
-# Use a simpler CORS configuration that's more robust
+# Configure middleware
 allow_all = False
 if settings.CORS_ORIGINS and "*" in settings.CORS_ORIGINS:
     logger.warning("CORS configured to allow all origins. This should only be used in development.")
@@ -40,6 +43,22 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Add security headers middleware
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    # Only add in production mode
+    if settings.ENVIRONMENT.lower() == "production":
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'"
+    return response
+
+# Add Beta Authentication middleware
+app.add_middleware(BetaAuthMiddleware)
 
 # Warm up connections at startup
 @app.on_event("startup")
@@ -61,9 +80,29 @@ async def warm_up_connections():
     else:
         logger.warning("Failed to initialize vector store singleton")
 
+# Include routers
 app.include_router(rag.router, prefix=f"{settings.API_V1_STR}/rag", tags=["rag"])
 app.include_router(youtube.router, prefix=f"{settings.API_V1_STR}/youtube", tags=["youtube"])
 app.include_router(gmail.router, prefix=f"{settings.API_V1_STR}/gmail", tags=["gmail"])
+
+# Add a route to handle the login form submission
+@app.post("/cosmos-auth")
+async def handle_auth_form(request: Request):
+    """This route handles the login form submission, which is then processed by the auth middleware.
+    If this endpoint returns a response directly, it means the middleware didn't handle the request.
+    """
+    # Import here to avoid circular imports
+    from fastapi.responses import JSONResponse
+    
+    # Log the error - this endpoint should never directly return a response
+    # as the auth middleware should intercept the request first
+    logger.error("Auth middleware failed to handle /cosmos-auth request")
+    
+    # Return a proper error response for production
+    return JSONResponse(
+        content={"error": "Authentication system error"},
+        status_code=500
+    )
 
 # --- Serve React Frontend Static Files ---
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))

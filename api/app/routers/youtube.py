@@ -3,7 +3,7 @@ from typing import Dict, Any
 import logging
 
 from ..models.youtube import YouTubeRequest, YouTubeResponse
-from ..dependencies import get_cosmos_connector, get_vector_store_singleton
+from ..dependencies import get_cosmos_connector, get_vector_store_singleton, verify_beta_access
 from ..services.cosmos_connector import CosmosConnector
 
 logger = logging.getLogger(__name__)
@@ -13,7 +13,8 @@ router = APIRouter()
 async def process_youtube(
     request: YouTubeRequest,
     vector_store = Depends(get_vector_store_singleton),
-    cosmos: CosmosConnector = Depends(get_cosmos_connector)
+    cosmos: CosmosConnector = Depends(get_cosmos_connector),
+    _: bool = Depends(verify_beta_access)
 ) -> Dict[str, Any]:
     """
     Process a YouTube video transcript.

@@ -143,7 +143,18 @@ These extensions are built using pybind11 for seamless Python integration and im
     ```
     **Important**: Ensure your Pinecone index is configured with **3072 dimensions** to match the `text-embedding-3-large` model used for OpenAI embeddings.
 
-5.  **Build C++ Extensions** (Optional but Recommended):
+5.  **Configure Beta Authentication** (Recommended for Production):
+    The application includes a "Closed Beta" authentication system to protect your API endpoints from unauthorized access. By default, it uses a simple password protection system with the following settings:
+    
+    ```dotenv
+    # Add these to your .env file to customize beta authentication
+    COSMOS_BETA_PASSWORD="your_secure_beta_password"  # Default: "CosmosClosedBeta2025"
+    BETA_ENABLED=true                                 # Set to "false" to disable beta auth
+    ```
+    
+    When enabled, users will be presented with a password protection screen before accessing any part of the application. The session expires after 60 minutes, requiring re-authentication. This helps prevent abuse of your API endpoints while in beta testing.
+
+6.  **Build C++ Extensions** (Optional but Recommended):
     These extensions improve performance for text chunking, PDF extraction, and hashing. Build them *after* installing system dependencies:
     ```bash
     cd cpp_extensions
@@ -158,7 +169,7 @@ These extensions are built using pybind11 for seamless Python integration and im
     ```
     The application uses an `__init__.py` in `core/cpp_modules/` to dynamically load these extensions if available, falling back to pure Python implementations otherwise.
 
-6.  **Set Up Gmail Credentials**:
+7.  **Set Up Gmail Credentials**:
     - Create a `credentials` directory in the project root if it doesn't exist: `mkdir -p credentials`
     - Place the `credentials.json` file you downloaded from Google Cloud inside this directory.
     - **Rename** the file to `.gmail_credentials.json`. (The leading dot helps keep it slightly hidden and matches the code).

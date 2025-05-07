@@ -16,7 +16,7 @@ from ..models.rag import (
     ImageProcessResponse,
 )
 from ..services.cosmos_connector import CosmosConnector
-from ..dependencies import get_cosmos_connector, get_vector_store_singleton
+from ..dependencies import get_cosmos_connector, get_vector_store_singleton, verify_beta_access
 from ..utils.timeout import run_with_timeout
 from ..core.config import settings
 
@@ -27,7 +27,8 @@ router = APIRouter()
 async def query_documents(
     request: QueryRequest,
     vector_store = Depends(get_vector_store_singleton),
-    cosmos: CosmosConnector = Depends(get_cosmos_connector)
+    cosmos: CosmosConnector = Depends(get_cosmos_connector),
+    _: bool = Depends(verify_beta_access)
 ) -> Dict[str, Any]:
     """
     Query documents using the RAG system.
@@ -66,7 +67,8 @@ async def query_documents(
 async def stream_query_documents(
     request: QueryRequest,
     vector_store = Depends(get_vector_store_singleton),
-    cosmos: CosmosConnector = Depends(get_cosmos_connector)
+    cosmos: CosmosConnector = Depends(get_cosmos_connector),
+    _: bool = Depends(verify_beta_access)
 ):
     """
     Stream query results from the RAG system.
@@ -110,7 +112,8 @@ async def process_document(
     chunk_size: int = Form(512),
     chunk_overlap: int = Form(50),
     vector_store = Depends(get_vector_store_singleton),
-    cosmos: CosmosConnector = Depends(get_cosmos_connector)
+    cosmos: CosmosConnector = Depends(get_cosmos_connector),
+    _: bool = Depends(verify_beta_access)
 ) -> Dict[str, Any]:
     """
     Process and store a document in the vector database.
@@ -160,7 +163,8 @@ async def process_document(
 async def process_url(
     request: URLRequest,
     vector_store = Depends(get_vector_store_singleton),
-    cosmos: CosmosConnector = Depends(get_cosmos_connector)
+    cosmos: CosmosConnector = Depends(get_cosmos_connector),
+    _: bool = Depends(verify_beta_access)
 ) -> Dict[str, Any]:
     """
     Process and store content from a URL.
@@ -201,7 +205,8 @@ async def process_url(
 @router.get("/sources", response_model=SourceInfoResponse)
 async def get_source_info(
     vector_store = Depends(get_vector_store_singleton),
-    cosmos: CosmosConnector = Depends(get_cosmos_connector)
+    cosmos: CosmosConnector = Depends(get_cosmos_connector),
+    _: bool = Depends(verify_beta_access)
 ) -> Dict[str, Any]:
     """
     Get information about the available sources in the vector database.
@@ -250,7 +255,8 @@ async def get_source_info(
 
 @router.get("/health")
 async def health_check(
-    vector_store = Depends(get_vector_store_singleton)
+    vector_store = Depends(get_vector_store_singleton),
+    _: bool = Depends(verify_beta_access)
 ) -> Dict[str, Any]:
     """Health check endpoint for the RAG router.
     Verifies that the vector store is accessible.
@@ -282,7 +288,8 @@ async def health_check(
 
 @router.post("/cache/clear")
 async def clear_cache(
-    cosmos: CosmosConnector = Depends(get_cosmos_connector)
+    cosmos: CosmosConnector = Depends(get_cosmos_connector),
+    _: bool = Depends(verify_beta_access)
 ) -> Dict[str, Any]:
     """
     Clear the query response cache.
@@ -308,7 +315,8 @@ async def process_image(
     chunk_size: int = Form(512),
     chunk_overlap: int = Form(50),
     vector_store = Depends(get_vector_store_singleton),
-    cosmos: CosmosConnector = Depends(get_cosmos_connector)
+    cosmos: CosmosConnector = Depends(get_cosmos_connector),
+    _: bool = Depends(verify_beta_access)
 ) -> Dict[str, Any]:
     """
     Process and store an image in the vector database using OCR.
