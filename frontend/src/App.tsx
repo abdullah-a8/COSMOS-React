@@ -10,7 +10,7 @@ import { useDevice } from './hooks/useDevice';
 import { useEffect } from 'react';
 
 function App() {
-  const { isMobile, isTablet } = useDevice();
+  const { isMobile} = useDevice();
   
   // Set proper viewport meta tag for mobile devices
   useEffect(() => {
