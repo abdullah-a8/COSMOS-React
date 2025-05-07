@@ -3,9 +3,14 @@ import { FloatingPaper } from "./floating-paper"
 import { useDevice } from "../hooks/useDevice"
 import { Button } from "./ui/button"
 import { ArrowRight } from "lucide-react"
+import { Link } from "react-router-dom"
 
 export default function Hero() {
   const { isMobile, isTablet } = useDevice();
+
+  const openGitHubRepo = () => {
+    window.open("https://github.com/abdullah-a8/COSMOS-React", "_blank");
+  };
 
   return (
     <div className="relative min-h-[60vh] flex items-center justify-center pt-24">
@@ -47,10 +52,16 @@ export default function Hero() {
             transition={{ duration: 0.5, delay: 0.3 }}
             className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-6"
           >
-            <Button className="bg-purple-600 hover:bg-purple-700 text-white min-w-[180px] h-11">
-              Get Started
-            </Button>
-            <Button variant="outline" className="border-purple-500/50 text-purple-400 hover:bg-purple-500/10 min-w-[180px] h-11">
+            <Link to="/rag-chatbot">
+              <Button className="bg-purple-600 hover:bg-purple-700 text-white min-w-[180px] h-11">
+                Get Started
+              </Button>
+            </Link>
+            <Button 
+              variant="outline" 
+              className="border-purple-500/50 text-purple-400 hover:bg-purple-500/10 min-w-[180px] h-11"
+              onClick={openGitHubRepo}
+            >
               <span>Learn More</span>
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
