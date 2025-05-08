@@ -5,6 +5,7 @@ import hashlib
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api.proxies import WebshareProxyConfig
 import os
+from tenacity import retry, stop_after_attempt, wait_fixed
 
 # Try to import the C++ implementations first, fall back to Python if not available
 try:
@@ -83,24 +84,24 @@ def extract_transcript_details(youtube_video_url):
         else:
             return "Error: Invalid YouTube URL format.", None
 
-        print(f"Extracting transcript for video ID: {video_id}")
-        
         # Get Webshare credentials from environment variables
-        proxy_username = os.environ.get("PROXY_USERNAME")
-        proxy_password = os.environ.get("PROXY_PASSWORD")
+        proxy_username = os.environ.get("WEBSHARE_USERNAME")
+        proxy_password = os.environ.get("WEBSHARE_PASSWORD")
         
         if proxy_username and proxy_password:
-            # Use Webshare's dedicated integration
-            print("Using Webshare proxy for YouTube transcript retrieval")
-            proxy_config = WebshareProxyConfig(
-                proxy_username=proxy_username,
-                proxy_password=proxy_password
-            )
-            ytt_api = YouTubeTranscriptApi(proxy_config=proxy_config)
-            transcript_list = ytt_api.fetch(video_id)
+            # Use Webshare's dedicated integration with retries
+            @retry(stop=stop_after_attempt(3), wait=wait_fixed(2))
+            def fetch_with_retry():
+                proxy_config = WebshareProxyConfig(
+                    proxy_username=proxy_username,
+                    proxy_password=proxy_password
+                )
+                ytt_api = YouTubeTranscriptApi(proxy_config=proxy_config)
+                return ytt_api.fetch(video_id)
+            
+            transcript_list = fetch_with_retry()
         else:
             # Fall back to direct connection (might fail on Heroku)
-            print("No proxy configuration found, attempting direct connection")
             ytt_api = YouTubeTranscriptApi()
             transcript_list = ytt_api.fetch(video_id)
 
@@ -113,7 +114,6 @@ def extract_transcript_details(youtube_video_url):
         return transcript, f"youtube_{video_id}"
 
     except Exception as e:
-        print(f"Error in YouTube transcript extraction: {e}")
         video_id_on_error = None
         if 'video_id' in locals():
             video_id_on_error = f"youtube_{video_id}"
