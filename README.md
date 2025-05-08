@@ -98,6 +98,69 @@ These extensions are built using pybind11 for seamless Python integration and im
 11. **API Response**: Backend sends the LLM's response back to the frontend.
 12. **Display**: The response is displayed in the React UI.
 
+## Screenshots
+
+### Home and Authentication
+
+![Beta Authentication Screen](./Images/screenshots/auth.png)
+*The initial beta authentication screen requiring a password to access the application.*
+
+![COSMOS Home Dashboard](./Images/screenshots/home.png)
+*The main dashboard showing available agents and quick access navigation.*
+
+### RAG Chatbot
+
+![RAG Chatbot Interface](./Images/screenshots/rag_chatbot.png)
+*The main RAG Chatbot interface with chat history and input field.*
+
+![Document Upload](./Images/screenshots/document_upload.png)
+*PDF and URL upload interface for adding documents to the knowledge base.*
+
+![RAG Settings Panel](./Images/screenshots/rag_settings.png)
+*Configurable settings for the RAG system including model selection, temperature, and chunking parameters.*
+
+![RAG Chat with Source References](./Images/screenshots/rag_sources.png)
+*A sample conversation showing answers with source attribution to specific documents.*
+
+### YouTube Processor
+
+![YouTube URL Input](./Images/screenshots/youtube_input.png)
+*The YouTube processor interface for entering video URLs.*
+
+![YouTube Processing Status](./Images/screenshots/youtube_processing.png)
+*Real-time status updates during transcript extraction and processing.*
+
+![YouTube Successful Processing](./Images/screenshots/youtube_success.png)
+*Confirmation screen showing the successfully processed video with thumbnail.*
+
+### Gmail Response Assistant
+
+![Gmail Coming Soon](./Images/screenshots/gmail_coming_soon.png)
+*The Gmail Response Assistant "Coming Soon" screen in the React frontend. This feature is currently being ported from the Streamlit implementation.*
+
+### Mobile Responsiveness
+
+![Mobile Authentication](./Images/screenshots/mobile_auth.png)
+*The beta authentication screen optimized for mobile devices.*
+
+![Mobile Home View](./Images/screenshots/mobile_home.png)
+*The responsive mobile view of the home dashboard.*
+
+![Mobile RAG Chat](./Images/screenshots/mobile_rag.png)
+*The RAG Chatbot interface optimized for mobile devices.*
+
+![Mobile RAG Settings](./Images/screenshots/mobile_rag_settings.png)
+*The RAG Chatbot settings panel on mobile, allowing configuration of model parameters.*
+
+![Mobile YouTube Processor](./Images/screenshots/mobile_youtube.png)
+*The YouTube processor interface adapted for mobile viewing.*
+
+![Mobile YouTube Settings](./Images/screenshots/mobile_youtube_settings.png)
+*YouTube processor settings and status display on mobile devices.*
+
+![Mobile Gmail Coming Soon](./Images/screenshots/mobile_gmail.png)
+*The Gmail "Coming Soon" screen on mobile, showing the feature is in development.*
+
 ## Getting Started
 
 ### Prerequisites
@@ -330,45 +393,4 @@ COSMOS/
 
 The project is configured for deployment on Heroku with the following setup:
 
--   **`Procfile`**: `web: uvicorn api.app.main:app --host 0.0.0.0 --port $PORT`
-    -   This command tells Heroku how to start the web process, running the FastAPI application using Uvicorn. The `$PORT` variable is dynamically assigned by Heroku.
--   **`package.json` (root level)**:
-    -   The `heroku-postbuild` script handles the frontend build process on Heroku after dependencies are installed.
--   **Python Version**: The `.python-version` file (containing `3.13`) helps ensure Heroku uses the correct Python runtime.
-
-To deploy:
-1.  Create a Heroku app: `heroku create your-app-name`
-2.  Add necessary buildpacks:
-    ```bash
-    heroku buildpacks:add heroku/python
-    heroku buildpacks:add heroku/nodejs
-    ```
-3.  Set environment variables in Heroku via the dashboard or CLI.
-4.  Push your code to Heroku: `git push heroku main`.
-
-## License
-
-This project is licensed under the MIT License. See the `LICENSE` file for details.
-
-## Acknowledgments
-
--   Built with [React](https://react.dev/) and [FastAPI](https://fastapi.tiangolo.com/).
--   Leverages the power of [LangChain](https://www.langchain.com/) for LLM application development.
--   Vector database capabilities provided by [Pinecone](https://www.pinecone.io/).
--   PDF parsing thanks to [PyMuPDF](https://pymupdf.readthedocs.io/).
--   Web scraping via [newspaper4k](https://github.com/funkeeler/newspaper4k).
--   YouTube transcriptions via [youtube-transcript-api](https://github.com/jdepoix/youtube-transcript-api) and [yt-dlp](https://github.com/yt-dlp/yt-dlp).
--   Gmail integration via the [Google API Python Client](https://github.com/googleapis/google-api-python-client).
--   C++ extensions built with [pybind11](https://github.com/pybind/pybind11) for Python-C++ interoperability.
--   PDF processing in C++ powered by [Poppler](https://poppler.freedesktop.org/).
--   Cryptographic operations via [OpenSSL](https://www.openssl.org/).
-
-## Application Transition Status
-
-The application has transitioned from Streamlit to a React frontend with a FastAPI backend:
-
-- ✅ **React Frontend (`frontend/`)**: Provides the UI for the Home page, RAG Chatbot, and YouTube Processor.
-- ✅ **FastAPI Backend (`api/`)**: Serves the frontend and handles core logic execution for React components.
-- ⏳ **Gmail Agent (`pages/3_Gmail_Agent.py`)**: Still uses the original Streamlit UI and will be ported to React/FastAPI in the future.
-
-The `streamlit` dependency remains in `requirements.txt` solely for the Gmail Agent page.
+-   **`Procfile`

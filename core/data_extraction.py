@@ -3,7 +3,7 @@ from newspaper import Article
 from time import sleep
 import hashlib
 from youtube_transcript_api import YouTubeTranscriptApi
-from youtube_transcript_api.vendors import WebshareProxyConfig
+from youtube_transcript_api.proxies import WebshareProxyConfig
 import os
 
 # Try to import the C++ implementations first, fall back to Python if not available
@@ -85,23 +85,27 @@ def extract_transcript_details(youtube_video_url):
 
         print(f"Extracting transcript for video ID: {video_id}")
         
-        # Try to get Webshare credentials from environment variables
-        webshare_username = os.environ.get("WEBSHARE_USERNAME")
-        webshare_password = os.environ.get("WEBSHARE_PASSWORD")
+        # Get Webshare credentials from environment variables
+        proxy_username = os.environ.get("PROXY_USERNAME")
+        proxy_password = os.environ.get("PROXY_PASSWORD")
         
-        if webshare_username and webshare_password:
-            # Use Webshare proxy if credentials are available
+        if proxy_username and proxy_password:
+            # Use Webshare's dedicated integration
+            print("Using Webshare proxy for YouTube transcript retrieval")
             proxy_config = WebshareProxyConfig(
-                username=webshare_username,
-                password=webshare_password
+                proxy_username=proxy_username,
+                proxy_password=proxy_password
             )
-            api = YouTubeTranscriptApi(proxy_config=proxy_config)
-            transcript_list = api.fetch(video_id)
+            ytt_api = YouTubeTranscriptApi(proxy_config=proxy_config)
+            transcript_list = ytt_api.fetch(video_id)
         else:
-            # Fall back to the old method if no proxy credentials are available
-            transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
+            # Fall back to direct connection (might fail on Heroku)
+            print("No proxy configuration found, attempting direct connection")
+            ytt_api = YouTubeTranscriptApi()
+            transcript_list = ytt_api.fetch(video_id)
 
-        transcript = " ".join([i["text"] for i in transcript_list])
+        # The returned object is a FetchedTranscript, convert to the format expected by the rest of the code
+        transcript = " ".join([snippet.text for snippet in transcript_list])
 
         if not transcript:
             return "Error: Could not retrieve transcript (may be disabled for this video).", f"youtube_{video_id}"
