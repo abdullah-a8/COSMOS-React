@@ -189,3 +189,21 @@ async def serve_react_app(full_path: str):
 async def health_check():
     """Health check endpoint"""
     return {"status": "healthy"}
+
+@app.get(f"{settings.API_V1_STR}/auth-status", tags=["auth"])
+async def auth_status(request: Request):
+    """Check authentication status"""
+    from .core.auth import SESSION_TOKEN_NAME, ACTIVE_SESSIONS
+    
+    session_token = request.cookies.get(SESSION_TOKEN_NAME)
+    is_authenticated = bool(session_token and session_token in ACTIVE_SESSIONS)
+    
+    response = {
+        "authenticated": is_authenticated,
+        "session_active": bool(session_token in ACTIVE_SESSIONS) if session_token else False
+    }
+    
+    if settings.DEBUG:
+        response["beta_enabled"] = getattr(settings, "BETA_ENABLED", True)
+    
+    return response
