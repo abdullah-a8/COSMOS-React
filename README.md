@@ -116,9 +116,6 @@ These extensions are built using pybind11 for seamless Python integration and im
 ![Document Upload](./Images/screenshots/document_upload.png)
 *PDF and URL upload interface for adding documents to the knowledge base.*
 
-![RAG Settings Panel](./Images/screenshots/rag_settings.png)
-*Configurable settings for the RAG system including model selection, temperature, and chunking parameters.*
-
 ![RAG Chat with Source References](./Images/screenshots/rag_sources.png)
 *A sample conversation showing answers with source attribution to specific documents.*
 
@@ -128,7 +125,7 @@ These extensions are built using pybind11 for seamless Python integration and im
 *The YouTube processor interface for entering video URLs.*
 
 ![YouTube Processing Status](./Images/screenshots/youtube_processing.png)
-*Real-time status updates during transcript extraction and processing.*
+*When a YouTube link is pasted, the app automatically fetches and displays the video with the "Process" button becoming available.*
 
 ![YouTube Successful Processing](./Images/screenshots/youtube_success.png)
 *Confirmation screen showing the successfully processed video with thumbnail.*
@@ -140,26 +137,31 @@ These extensions are built using pybind11 for seamless Python integration and im
 
 ### Mobile Responsiveness
 
-![Mobile Authentication](./Images/screenshots/mobile_auth.png)
-*The beta authentication screen optimized for mobile devices.*
-
-![Mobile Home View](./Images/screenshots/mobile_home.png)
-*The responsive mobile view of the home dashboard.*
-
-![Mobile RAG Chat](./Images/screenshots/mobile_rag.png)
-*The RAG Chatbot interface optimized for mobile devices.*
-
-![Mobile RAG Settings](./Images/screenshots/mobile_rag_settings.png)
-*The RAG Chatbot settings panel on mobile, allowing configuration of model parameters.*
-
-![Mobile YouTube Processor](./Images/screenshots/mobile_youtube.png)
-*The YouTube processor interface adapted for mobile viewing.*
-
-![Mobile YouTube Settings](./Images/screenshots/mobile_youtube_settings.png)
-*YouTube processor settings and status display on mobile devices.*
-
-![Mobile Gmail Coming Soon](./Images/screenshots/mobile_gmail.png)
-*The Gmail "Coming Soon" screen on mobile, showing the feature is in development.*
+<div align="center" style="max-width: 900px; margin: 0 auto;">
+  <img src="./Images/screenshots/mobile_auth.png" width="550" alt="Mobile Authentication">
+  <p><em>The beta authentication screen optimized for mobile devices.</em></p>
+  
+  <img src="./Images/screenshots/mobile_home.png" width="550" alt="Mobile Home View">
+  <p><em>The responsive mobile view of the home dashboard.</em></p>
+  
+  <img src="./Images/screenshots/mobile_rag.png" width="550" alt="Mobile RAG Chat">
+  <p><em>The RAG Chatbot interface optimized for mobile devices.</em></p>
+  
+  <img src="./Images/screenshots/mobile_rag_settings.png" width="550" alt="Mobile RAG Settings">
+  <p><em>The RAG Chatbot settings panel on mobile, allowing configuration of model parameters.</em></p>
+  
+  <img src="./Images/screenshots/mobile_youtube.png" width="550" alt="Mobile YouTube Processor">
+  <p><em>The YouTube processor interface adapted for mobile viewing.</em></p>
+  
+  <img src="./Images/screenshots/mobile_youtube_settings.png" width="550" alt="Mobile YouTube Settings">
+  <p><em>YouTube processor settings and status display on mobile devices.</em></p>
+  
+  <img src="./Images/screenshots/mobile_gmail.png" width="550" alt="Mobile Gmail Coming Soon">
+  <p><em>The Gmail "Coming Soon" screen on mobile, showing the feature is in development.</em></p>
+  
+  <img src="./Images/screenshots/mobile_nav.png" width="550" alt="Mobile Navigation Menu">
+  <p><em>The responsive navigation menu on mobile devices, providing easy access to all features.</em></p>
+</div>
 
 ## Getting Started
 
