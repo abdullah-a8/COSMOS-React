@@ -3,6 +3,8 @@ from newspaper import Article
 from time import sleep
 import hashlib
 from youtube_transcript_api import YouTubeTranscriptApi
+from youtube_transcript_api.vendors import WebshareProxyConfig
+import os
 
 # Try to import the C++ implementations first, fall back to Python if not available
 try:
@@ -82,7 +84,22 @@ def extract_transcript_details(youtube_video_url):
             return "Error: Invalid YouTube URL format.", None
 
         print(f"Extracting transcript for video ID: {video_id}")
-        transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
+        
+        # Try to get Webshare credentials from environment variables
+        webshare_username = os.environ.get("WEBSHARE_USERNAME")
+        webshare_password = os.environ.get("WEBSHARE_PASSWORD")
+        
+        if webshare_username and webshare_password:
+            # Use Webshare proxy if credentials are available
+            proxy_config = WebshareProxyConfig(
+                username=webshare_username,
+                password=webshare_password
+            )
+            api = YouTubeTranscriptApi(proxy_config=proxy_config)
+            transcript_list = api.fetch(video_id)
+        else:
+            # Fall back to the old method if no proxy credentials are available
+            transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
 
         transcript = " ".join([i["text"] for i in transcript_list])
 
@@ -96,4 +113,4 @@ def extract_transcript_details(youtube_video_url):
         video_id_on_error = None
         if 'video_id' in locals():
             video_id_on_error = f"youtube_{video_id}"
-        return f"Error retrieving transcript: {e}", video_id_on_error 
+        return f"Error retrieving transcript: {e}", video_id_on_error

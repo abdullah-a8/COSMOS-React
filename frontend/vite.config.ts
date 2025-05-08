@@ -12,10 +12,13 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api': {
+      '/api/v1': {
         target: 'http://localhost:8000',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '/api/v1'),
+      },
+      '/cosmos-auth': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
       },
     },
   },
