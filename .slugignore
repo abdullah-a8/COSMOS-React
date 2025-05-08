@@ -1,51 +1,22 @@
-# Development files
-.git
-.github
-.gitignore
-.vscode
-.idea
+# Development-only files
+.git/
+.github/
+.vscode/
+.idea/
 .editorconfig
-.pytest_cache
+.pytest_cache/
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
-.Python
+
+# Local environment files
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 
-# Build artifacts and dependencies (keep build configs)
-node_modules/
-frontend/.cache
-frontend/coverage
-*.egg-info/
-*.egg
-.venv/
-env/
-venv/
-ENV/
-.streamlit/
-
-# Cache directories
-.npm
-.eslintcache
-.stylelintcache
-.parcel-cache
-.next/
-.nuxt/
-.vuepress/dist
-.serverless/
-.fusebox/
-.dynamodb/
-.tern-port
-.yarn/cache
-.yarn/unplugged
-.yarn/build-state.yml
-.yarn/install-state.gz
-
-# Test files
+# Test directories
 tests/
 test/
 testing/
@@ -55,18 +26,26 @@ htmlcov/
 .tox/
 .nox/
 .hypothesis/
-.pytest_cache/
 nosetests.xml
 coverage.xml
 *.cover
 
-# Documentation
+# Documentation (except README)
 docs/
-# *.md (keep markdown files)
-# !README.md
 LICENSE
 CHANGELOG.md
 CONTRIBUTING.md
+
+# Development temporary files
+.npm
+.eslintcache
+.stylelintcache
+.parcel-cache
+.next/
+.nuxt/
+.fusebox/
+.dynamodb/
+.tern-port
 
 # IDE files
 *.sublime-project
@@ -77,12 +56,12 @@ CONTRIBUTING.md
 *.sln
 *.sw?
 
-# Docker
+# Docker-related
 Dockerfile
 docker-compose.yml
 .dockerignore
 
-# Large media files
+# Large media files 
 *.mp4
 *.tiff
 *.avi
@@ -91,9 +70,13 @@ docker-compose.yml
 *.wmv
 
 # Log files
+logs/
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-logs
-*.log 
+
+# Don't include frontend cache in slug
+frontend/.cache/
+frontend/coverage/
