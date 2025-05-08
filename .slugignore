@@ -16,15 +16,10 @@ __pycache__/
 .env.test.local
 .env.production.local
 
-# Build artifacts and dependencies
+# Build artifacts and dependencies (keep build configs)
 node_modules/
-frontend/node_modules/
-frontend/dist
 frontend/.cache
-frontend/public/build
 frontend/coverage
-build/
-dist/
 *.egg-info/
 *.egg
 .venv/
@@ -67,8 +62,8 @@ coverage.xml
 
 # Documentation
 docs/
-*.md
-!README.md
+# *.md (keep markdown files)
+# !README.md
 LICENSE
 CHANGELOG.md
 CONTRIBUTING.md
@@ -94,14 +89,6 @@ docker-compose.yml
 *.flv
 *.mov
 *.wmv
-
-# Development configuration
-tsconfig.tsbuildinfo
-tsconfig.json
-tsconfig.node.json
-postcss.config.js
-tailwind.config.ts
-vite.config.ts
 
 # Log files
 npm-debug.log*
