@@ -141,25 +141,25 @@ These extensions are built using pybind11 for seamless Python integration and im
   <img src="./Images/screenshots/mobile_auth.png" width="550" alt="Mobile Authentication">
   <p><em>The beta authentication screen optimized for mobile devices.</em></p>
   
-  <img src="./Images/screenshots/mobile_home.png" width="550" alt="Mobile Home View">
+  <img src="./Images/screenshots/mobile_home.png" width="450" alt="Mobile Home View">
   <p><em>The responsive mobile view of the home dashboard.</em></p>
   
-  <img src="./Images/screenshots/mobile_rag.png" width="550" alt="Mobile RAG Chat">
+  <img src="./Images/screenshots/mobile_rag.png" width="450" alt="Mobile RAG Chat">
   <p><em>The RAG Chatbot interface optimized for mobile devices.</em></p>
   
-  <img src="./Images/screenshots/mobile_rag_settings.png" width="550" alt="Mobile RAG Settings">
+  <img src="./Images/screenshots/mobile_rag_settings.png" width="450" alt="Mobile RAG Settings">
   <p><em>The RAG Chatbot settings panel on mobile, allowing configuration of model parameters.</em></p>
   
-  <img src="./Images/screenshots/mobile_youtube.png" width="550" alt="Mobile YouTube Processor">
+  <img src="./Images/screenshots/mobile_youtube.png" width="450" alt="Mobile YouTube Processor">
   <p><em>The YouTube processor interface adapted for mobile viewing.</em></p>
   
-  <img src="./Images/screenshots/mobile_youtube_settings.png" width="550" alt="Mobile YouTube Settings">
+  <img src="./Images/screenshots/mobile_youtube_settings.png" width="450" alt="Mobile YouTube Settings">
   <p><em>YouTube processor settings and status display on mobile devices.</em></p>
   
-  <img src="./Images/screenshots/mobile_gmail.png" width="550" alt="Mobile Gmail Coming Soon">
+  <img src="./Images/screenshots/mobile_gmail.png" width="450" alt="Mobile Gmail Coming Soon">
   <p><em>The Gmail "Coming Soon" screen on mobile, showing the feature is in development.</em></p>
   
-  <img src="./Images/screenshots/mobile_nav.png" width="550" alt="Mobile Navigation Menu">
+  <img src="./Images/screenshots/mobile_nav.png" width="450" alt="Mobile Navigation Menu">
   <p><em>The responsive navigation menu on mobile devices, providing easy access to all features.</em></p>
 </div>
 
