@@ -226,6 +226,8 @@ These extensions are built using pybind11 for seamless Python integration and im
     GROQ_API_KEY="your_groq_api_key"
     PINECONE_API_KEY="your_pinecone_api_key"
     PINECONE_INDEX_NAME="your_pinecone_index_name"
+    WEBSHARE_USERNAME="your_webshare_username"
+    WEBSHARE_PASSWORD="your_webshare_password"
     ```
     **Important**: Ensure your Pinecone index is configured with **3072 dimensions** to match the `text-embedding-3-large` model used for OpenAI embeddings.
 
@@ -393,4 +395,45 @@ COSMOS/
 
 The project is configured for deployment on Heroku with the following setup:
 
--   **`Procfile`
+-   **`Procfile`**: `web: uvicorn api.app.main:app --host 0.0.0.0 --port $PORT`
+    -   This command tells Heroku how to start the web process, running the FastAPI application using Uvicorn. The `$PORT` variable is dynamically assigned by Heroku.
+-   **`package.json` (root level)**:
+    -   The `heroku-postbuild` script handles the frontend build process on Heroku after dependencies are installed.
+-   **Python Version**: The `.python-version` file (containing `3.13`) helps ensure Heroku uses the correct Python runtime.
+
+To deploy:
+1.  Create a Heroku app: `heroku create your-app-name`
+2.  Add necessary buildpacks:
+    ```bash
+    heroku buildpacks:add heroku/python
+    heroku buildpacks:add heroku/nodejs
+    ```
+3.  Set environment variables in Heroku via the dashboard or CLI.
+4.  Push your code to Heroku: `git push heroku main`.
+
+## License
+
+This project is licensed under the MIT License. See the `LICENSE` file for details.
+
+## Acknowledgments
+
+-   Built with [React](https://react.dev/) and [FastAPI](https://fastapi.tiangolo.com/).
+-   Leverages the power of [LangChain](https://www.langchain.com/) for LLM application development.
+-   Vector database capabilities provided by [Pinecone](https://www.pinecone.io/).
+-   PDF parsing thanks to [PyMuPDF](https://pymupdf.readthedocs.io/).
+-   Web scraping via [newspaper4k](https://github.com/funkeeler/newspaper4k).
+-   YouTube transcriptions via [youtube-transcript-api](https://github.com/jdepoix/youtube-transcript-api) and [yt-dlp](https://github.com/yt-dlp/yt-dlp).
+-   Gmail integration via the [Google API Python Client](https://github.com/googleapis/google-api-python-client).
+-   C++ extensions built with [pybind11](https://github.com/pybind/pybind11) for Python-C++ interoperability.
+-   PDF processing in C++ powered by [Poppler](https://poppler.freedesktop.org/).
+-   Cryptographic operations via [OpenSSL](https://www.openssl.org/).
+
+## Application Transition Status
+
+The application has transitioned from Streamlit to a React frontend with a FastAPI backend:
+
+- ✅ **React Frontend (`frontend/`)**: Provides the UI for the Home page, RAG Chatbot, and YouTube Processor.
+- ✅ **FastAPI Backend (`api/`)**: Serves the frontend and handles core logic execution for React components.
+- ⏳ **Gmail Agent (`pages/3_Gmail_Agent.py`)**: Still uses the original Streamlit UI and will be ported to React/FastAPI in the future.
+
+The `streamlit` dependency remains in `requirements.txt` solely for the Gmail Agent page.
