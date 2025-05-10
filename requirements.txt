@@ -35,5 +35,11 @@ requests==2.32.3
 sqlalchemy==2.0.40
 alembic==1.15.2
 asyncpg==0.30.0
+psycopg[binary]==3.2.7
+psycopg>=3.2.7
+psycopg2-binary>=2.9.10
 passlib[bcrypt]==1.7.4
 APScheduler==3.11.0
+
+# CORS
+starlette==0.46.2
