@@ -6,32 +6,18 @@ import RagChatbot from './pages/RagChatbot';
 import YouTubeProcessor from './pages/YouTubeProcessor';
 import GmailResponder from './pages/GmailResponder';
 import AuthScreen from './pages/AuthScreen';
+import AdminPanel from './pages/AdminPanel';
 import { RoboAnimation } from './components/robo-animation';
 import { useDevice } from './hooks/useDevice';
-import { useEffect, useState } from 'react';
+import { useAuth } from './hooks/useAuth';
+import { useEffect } from 'react';
 
 // Protected route component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const [authStatus, setAuthStatus] = useState<'loading' | 'authenticated' | 'unauthenticated'>('loading');
   const location = useLocation();
+  const { isAuthenticated, isLoading } = useAuth({ refreshInterval: 45 });
 
-  useEffect(() => {
-    // Check authentication status
-    const checkAuth = async () => {
-      try {
-        const response = await fetch('/api/v1/auth-status');
-        const data = await response.json();
-        setAuthStatus(data.authenticated ? 'authenticated' : 'unauthenticated');
-      } catch (err) {
-        // If API fails, assume unauthenticated
-        setAuthStatus('unauthenticated');
-      }
-    };
-    
-    checkAuth();
-  }, []);
-  
-  if (authStatus === 'loading') {
+  if (isLoading) {
     // Show loading screen
     return (
       <div className="flex flex-col items-center justify-center h-[80vh]">
@@ -44,9 +30,40 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     );
   }
   
-  if (authStatus === 'unauthenticated') {
+  if (isAuthenticated === false) {
     // Redirect to auth page with return path
     return <Navigate to="/auth" state={{ from: location }} replace />;
+  }
+  
+  return <>{children}</>;
+}
+
+// Admin-only route component
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
+  const { isAuthenticated, isAdmin, isLoading } = useAuth({ refreshInterval: 45 });
+
+  if (isLoading) {
+    // Show loading screen
+    return (
+      <div className="flex flex-col items-center justify-center h-[80vh]">
+        <div className="w-16 h-16 relative">
+          <div className="absolute top-0 left-0 w-full h-full border-4 border-purple-600/20 rounded-full"></div>
+          <div className="absolute top-0 left-0 w-full h-full border-4 border-transparent border-t-purple-600 rounded-full animate-spin"></div>
+        </div>
+        <p className="mt-4 text-white/70">Loading...</p>
+      </div>
+    );
+  }
+  
+  if (isAuthenticated === false) {
+    // Redirect to auth page with return path
+    return <Navigate to="/auth" state={{ from: location }} replace />;
+  }
+  
+  if (!isAdmin) {
+    // Redirect to home page if not admin
+    return <Navigate to="/" replace />;
   }
   
   return <>{children}</>;
@@ -73,6 +90,19 @@ function App() {
       'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0'
     );
   }, []);
+
+  // Prevent scrolling on auth page
+  useEffect(() => {
+    if (isAuthPage) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'auto';
+    }
+    
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, [isAuthPage]);
 
   return (
     <div className="min-h-screen bg-black/[0.96] antialiased relative overflow-x-hidden">
@@ -115,6 +145,11 @@ function App() {
               <ProtectedRoute>
                 <GmailResponder />
               </ProtectedRoute>
+            } />
+            <Route path="/admin" element={
+              <AdminRoute>
+                <AdminPanel />
+              </AdminRoute>
             } />
           </Routes>
         </div>

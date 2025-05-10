@@ -45,6 +45,13 @@ The system combines Retrieval-Augmented Generation (RAG) for knowledge-based cha
 - **Direct Sending**: Sends the drafted (and potentially edited) replies directly from the interface using the Gmail API, automatically handling threading.
 - **Label Management**: Marks replied-to emails as read automatically by removing the `UNREAD` label.
 
+### 🔒 Authentication System
+- **Closed Beta Access Control**: Limit access to invited users only with a secure invite code system.
+- **Invite Code Management**: Create and manage invite codes with customizable expiration dates and usage limits.
+- **Admin Panel**: Special access for administrators to manage the platform and create new invite codes.
+- **CSRF Protection**: Secure form submissions against cross-site request forgery attacks.
+- **Session Management**: Automatically handles user sessions, cleanup of expired sessions, and more.
+
 ## Technical Architecture
 
 COSMOS utilizes a modern architecture with React for the frontend, FastAPI for the backend API, and LangChain for orchestrating AI components.
@@ -56,6 +63,13 @@ COSMOS utilizes a modern architecture with React for the frontend, FastAPI for t
 - **`vector_store.py`**: Handles interactions with the Pinecone vector database. It initializes the connection using environment variables and provides functions to add processed document chunks (with embeddings generated via `OpenAIEmbeddings` using the `text-embedding-3-large` model) to the specified Pinecone index.
 - **`chain.py`**: Sets up the core LangChain sequence (LCEL) for the RAG functionality. It defines the prompt template (`ChatPromptTemplate`), initializes the selected ChatGroq LLM model with specific temperature settings, and includes the output parser (`StrOutputParser`).
 - **`agents/gmail_logic.py`**: Encapsulates all logic related to the Gmail agent, including OAuth authentication (`google-auth-oauthlib`, `google-api-python-client`), fetching/sending emails, and interacting *directly* with the OpenAI API (`openai` library) for classification, summarization, and reply generation using predefined prompts.
+
+### Authentication System (`api/app/core/`)
+
+- **`auth.py`**: Implements the middleware for beta authentication, handling user sessions and request protection.
+- **`auth_service.py`**: Contains core authentication logic including invite code validation, session creation/validation/refresh.
+- **`csrf.py`**: Implements Cross-Site Request Forgery protection for secure form submissions.
+- **`config.py`**: Centralized configuration using environment variables, with secure defaults.
 
 ### C++ Extensions (`cpp_extensions/`)
 
@@ -175,6 +189,7 @@ These extensions are built using pybind11 for seamless Python integration and im
 - CMake 3.30.0+ (for building C++ extensions)
 - OpenSSL development libraries (e.g., `openssl-devel` on Fedora/RHEL, `libssl-dev` on Debian/Ubuntu)
 - Poppler development libraries (e.g., `poppler-cpp-devel` on Fedora/RHEL, `libpoppler-cpp-dev` on Debian/Ubuntu)
+- PostgreSQL Database: Required for the authentication system
 - Pinecone Account: Sign up at [Pinecone](https://www.pinecone.io/) and create an index. Note the API key and index name.
 - OpenAI API Key: Obtain from [OpenAI](https://platform.openai.com/signup/) (used for embeddings and Gmail agent functions).
 - Groq API Key (Optional but Recommended): Obtain from [Groq](https://groq.com/) for access to fast LLMs used in the RAG chatbot.
@@ -220,31 +235,56 @@ These extensions are built using pybind11 for seamless Python integration and im
     cd ..
     ```
 
-5.  **Configure Environment Variables**:
+5.  **Set Up PostgreSQL Database**:
+    ```bash
+    # Create the database (local development)
+    createdb auth_system
+    ```
+
+6.  **Configure Environment Variables**:
     Create a file named `.env` in the project root directory. This file is used by `python-dotenv` to load your sensitive API keys and configuration settings.
     Add the following, replacing the placeholder values with your actual credentials:
     ```dotenv
+    # API Keys
     OPENAI_API_KEY="your_openai_api_key"
     GROQ_API_KEY="your_groq_api_key"
     PINECONE_API_KEY="your_pinecone_api_key"
     PINECONE_INDEX_NAME="your_pinecone_index_name"
     WEBSHARE_USERNAME="your_webshare_username"
     WEBSHARE_PASSWORD="your_webshare_password"
+    
+    # Authentication Settings
+    SECRET_KEY="your_secure_random_key"  # Generate with: python -c "import secrets; print(secrets.token_urlsafe(32))"
+    BETA_ENABLED=true
+    BETA_SESSION_TIMEOUT=3600
+    ADMIN_EMAILS="your-email@example.com"
+    ENVIRONMENT="development"  # Change to "production" for production deployments
+    
+    # Database Settings (if not using DATABASE_URL)
+    DB_USER="postgres"
+    DB_PASSWORD="your-password"
+    DB_HOST="localhost"
+    DB_NAME="auth_system"
+    DB_PORT="5432"
     ```
     **Important**: Ensure your Pinecone index is configured with **3072 dimensions** to match the `text-embedding-3-large` model used for OpenAI embeddings.
 
-6.  **Configure Beta Authentication** (Recommended for Production):
-    The application includes a "Closed Beta" authentication system to protect your API endpoints from unauthorized access. By default, it uses a simple password protection system with the following settings:
-    
-    ```dotenv
-    # Add these to your .env file to customize beta authentication
-    COSMOS_BETA_PASSWORD="your_secure_beta_password"  # Default: "CosmosClosedBeta2025"
-    BETA_ENABLED=true                                 # Set to "false" to disable beta auth
+7.  **Run Database Migrations**:
+    ```bash
+    cd api
+    alembic upgrade head
+    cd ..
     ```
-    
-    When enabled, users will be presented with a password protection screen before accessing any part of the application. The session expires after 60 minutes, requiring re-authentication. This helps prevent abuse of your API endpoints while in beta testing.
 
-7.  **Build C++ Extensions** (Optional but Recommended):
+8.  **Create Initial Admin Invite Code**:
+    ```bash
+    cd api
+    python scripts/setup_auth.py
+    cd ..
+    ```
+    Follow the prompts to create your admin invite code. Save this code securely - it will only be shown once! Then set the ADMIN_EMAILS environment variable as instructed.
+
+9.  **Build C++ Extensions** (Optional but Recommended):
     These extensions improve performance for text chunking, PDF extraction, and hashing. Build them *after* installing system dependencies:
     ```bash
     cd cpp_extensions
@@ -259,7 +299,7 @@ These extensions are built using pybind11 for seamless Python integration and im
     ```
     The application uses an `__init__.py` in `core/cpp_modules/` to dynamically load these extensions if available, falling back to pure Python implementations otherwise.
 
-8.  **Set Up Gmail Credentials**:
+10. **Set Up Gmail Credentials**:
     - Create a `credentials` directory in the project root if it doesn't exist: `mkdir -p credentials`
     - Place the `credentials.json` file you downloaded from Google Cloud inside this directory.
     - **Rename** the file to `.gmail_credentials.json`. (The leading dot helps keep it slightly hidden and matches the code).
@@ -325,6 +365,16 @@ The application consists of a React frontend, a FastAPI backend, and a standalon
     - Click **Generate Draft Reply**.
 7.  **Edit & Send**: Review the generated draft in the text area. Make any necessary edits, then click **Send Reply**. The email will be sent using your Gmail account, and the original email will be marked as read.
 
+### Authentication & Admin Panel
+
+1.  When first accessing the application, you'll be presented with a beta authentication screen.
+2.  Enter the invite code you created during setup or that was provided to you.
+3.  Once authenticated, your session will be remembered for the duration specified in the settings (default 60 minutes).
+4.  Admin users can access the Admin Panel at `/admin` to:
+    - Create new invite codes with custom settings (email, expiration dates, usage limits)
+    - View active invite codes and their usage statistics
+    - Deactivate unused or compromised invite codes
+
 ## Customization
 
 ### Modifying LLM Settings
@@ -343,6 +393,24 @@ The modular structure (`core/agents/`) is designed for extension. To add a new a
 3. Add necessary dependencies to `requirements.txt`.
 4. Update environment variables (`.env`) and configuration (`config/`) if needed.
 
+### Authentication System Configuration
+
+The authentication system can be customized via environment variables:
+```dotenv
+# Authentication Settings
+SECRET_KEY="your_secure_random_key"  # Required for production
+BETA_ENABLED=true                    # Set to false to disable auth completely
+BETA_SESSION_TIMEOUT=3600            # Session duration in seconds
+ADMIN_EMAILS="admin@example.com"     # Comma-separated list of admin emails
+AUTH_CLEANUP_INTERVAL_HOURS=12       # How often to clean expired sessions
+
+# Database Connection Pool Settings (optional)
+DB_POOL_SIZE=20
+DB_MAX_OVERFLOW=10
+DB_POOL_TIMEOUT=30
+DB_POOL_RECYCLE=1800
+```
+
 ## Project Structure
 
 ```
@@ -360,8 +428,11 @@ COSMOS/
 │   │   ├── models/         # Pydantic data models
 │   │   ├── services/       # Business logic
 │   │   └── utils/          # Helper functions
+│   ├── scripts/            # Setup and maintenance scripts
+│   │   └── setup_auth.py   # Authentication system setup
+│   ├── migrations/         # Alembic database migrations
 │   ├── requirements.txt    # API-specific dependencies
-│   └── run.py              # Helper script for development
+│   └── alembic.ini         # Alembic configuration
 ├── pages/
 │   └── 3_Gmail_Agent.py    # UI for Gmail integration (Streamlit)
 ├── core/
@@ -405,13 +476,43 @@ The project is configured for deployment on Heroku with the following setup:
 
 To deploy:
 1.  Create a Heroku app: `heroku create your-app-name`
-2.  Add necessary buildpacks:
+2.  Add the PostgreSQL add-on: `heroku addons:create heroku-postgresql:mini`
+3.  Add necessary buildpacks:
     ```bash
     heroku buildpacks:add heroku/python
     heroku buildpacks:add heroku/nodejs
     ```
-3.  Set environment variables in Heroku via the dashboard or CLI.
-4.  Push your code to Heroku: `git push heroku main`.
+4.  Set environment variables:
+    ```bash
+    heroku config:set SECRET_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(32))')"
+    heroku config:set BETA_ENABLED=true
+    heroku config:set ENVIRONMENT=production
+    heroku config:set APP_URL="https://your-app.herokuapp.com"
+    heroku config:set OPENAI_API_KEY="your-openai-api-key"
+    heroku config:set GROQ_API_KEY="your-groq-api-key"
+    heroku config:set PINECONE_API_KEY="your-pinecone-api-key"
+    heroku config:set PINECONE_INDEX_NAME="your-pinecone-index-name"
+    ```
+5.  Push your code to Heroku: `git push heroku main`
+6.  Run database migrations: `heroku run alembic upgrade head`
+7.  Create your initial admin invite code: `heroku run python api/scripts/setup_auth.py`
+8.  Set the admin email: `heroku config:set ADMIN_EMAILS="your-email@example.com"`
+
+### Troubleshooting Deployment
+
+**Authentication Issues**:
+- Check logs: `heroku logs --tail`
+- Verify `BETA_ENABLED` is set to `true`
+- Ensure PostgreSQL is properly configured
+
+**Database Issues**:
+- Check database status: `heroku pg:info`
+- Reset database (if needed): `heroku pg:reset` (warning: destroys all data)
+- Re-run migrations: `heroku run alembic upgrade head`
+
+**Admin Access Issues**:
+- Verify `ADMIN_EMAILS` matches the email used for the invite code
+- The email must match exactly (case-insensitive)
 
 ## License
 
@@ -429,6 +530,8 @@ This project is licensed under the MIT License. See the `LICENSE` file for detai
 -   C++ extensions built with [pybind11](https://github.com/pybind/pybind11) for Python-C++ interoperability.
 -   PDF processing in C++ powered by [Poppler](https://poppler.freedesktop.org/).
 -   Cryptographic operations via [OpenSSL](https://www.openssl.org/).
+-   Authentication system built with [SQLAlchemy](https://www.sqlalchemy.org/) and [PostgreSQL](https://www.postgresql.org/).
+-   Database migrations managed by [Alembic](https://alembic.sqlalchemy.org/).
 
 ## Application Transition Status
 
@@ -436,6 +539,7 @@ The application has transitioned from Streamlit to a React frontend with a FastA
 
 - ✅ **React Frontend (`frontend/`)**: Provides the UI for the Home page, RAG Chatbot, and YouTube Processor.
 - ✅ **FastAPI Backend (`api/`)**: Serves the frontend and handles core logic execution for React components.
+- ✅ **Authentication System**: Provides secure access control with admin capabilities and invite code management.
 - ⏳ **Gmail Agent (`pages/3_Gmail_Agent.py`)**: Still uses the original Streamlit UI and will be ported to React/FastAPI in the future.
 
 The `streamlit` dependency remains in `requirements.txt` solely for the Gmail Agent page.

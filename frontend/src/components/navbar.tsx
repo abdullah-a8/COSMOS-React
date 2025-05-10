@@ -6,10 +6,12 @@ import { Button } from "./ui/button"
 import { Bot, Menu, X, ChevronRight } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useDevice } from "../hooks/useDevice"
+import { useAuth } from "../hooks/useAuth"
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { isMobile } = useDevice();
+  const { isAdmin } = useAuth();
   
   // Prevent body scroll when mobile menu is open
   useEffect(() => {
@@ -44,6 +46,7 @@ export default function Navbar() {
             <NavLink to="/rag-chatbot">RAG Chatbot</NavLink>
             <NavLink to="/youtube-processor">YouTube Processor</NavLink>
             <NavLink to="/gmail-responder">Gmail Responder</NavLink>
+            {isAdmin && <NavLink to="/admin">Admin</NavLink>}
           </div>
         )}
 
@@ -139,6 +142,18 @@ export default function Navbar() {
                 >
                   Gmail Responder
                 </MobileNavLink>
+                
+                {isAdmin && (
+                  <MobileNavLink 
+                    to="/admin" 
+                    onClick={() => setMobileMenuOpen(false)}
+                    icon={<div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-yellow-600 flex items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 text-white"><path d="M12 4.5a2.5 2.5 0 0 0-4.96-.46 2.5 2.5 0 0 0-1.98 3 2.5 2.5 0 0 0 1.32 4.24 2.5 2.5 0 0 0 1.98 3A2.5 2.5 0 0 0 12 13.5a2.5 2.5 0 0 0 4.96.46 2.5 2.5 0 0 0 1.98-3 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 12 4.5Z"/><path d="M12 15v5"/><path d="M4 12H2"/><path d="M22 12h-2"/></svg>
+                    </div>}
+                  >
+                    Admin
+                  </MobileNavLink>
+                )}
               </div>
               
               <div className="mt-auto pt-8 pb-8">

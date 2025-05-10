@@ -1,13 +1,13 @@
 import secrets
 from typing import List, Optional, Union, Dict, Any
 import json
-import logging # Import logging
+import logging
 import os
 
 from pydantic import AnyHttpUrl, field_validator, PostgresDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-logger = logging.getLogger(__name__) # Add logger
+logger = logging.getLogger(__name__)
 
 class Settings(BaseSettings):
     # API settings
@@ -56,11 +56,17 @@ class Settings(BaseSettings):
                 return [v]
         
         # Fallback to default if nothing else worked
+        # Check for APP_URL (common in platforms like Heroku, Render, etc.)
+        app_url = os.environ.get("APP_URL")
+        if app_url:
+            logger.info(f"Using APP_URL for CORS: {app_url}")
+            return [app_url]
+        
         logger.warning(f"Could not parse CORS_ORIGINS '{v}'. Using default localhost values.")
         return ["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173"]
 
-    # Security
-    SECRET_KEY: str = "PLEASE_CHANGE_ME_IN_PRODUCTION_ENV"
+    # Security - generate a secure key if not provided
+    SECRET_KEY: str = os.environ.get("SECRET_KEY", secrets.token_urlsafe(32) if os.environ.get("ENVIRONMENT") == "production" else "PLEASE_CHANGE_ME_IN_PRODUCTION_ENV")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8  # 8 days
     
     # External API Keys
@@ -77,40 +83,57 @@ class Settings(BaseSettings):
     RATE_LIMIT_PER_MINUTE: int = 60
     
     # Environment
-    ENVIRONMENT: str = "development"
+    ENVIRONMENT: str = os.environ.get("ENVIRONMENT", "development")
     
     # Logging
-    LOG_LEVEL: str = "INFO"
+    LOG_LEVEL: str = os.environ.get("LOG_LEVEL", "INFO")
     
     # Pinecone timeout settings
-    PINECONE_QUERY_TIMEOUT: float = float(os.getenv("PINECONE_QUERY_TIMEOUT", "30.0"))  # 30 seconds default
-    PINECONE_UPSERT_TIMEOUT: float = float(os.getenv("PINECONE_UPSERT_TIMEOUT", "60.0"))  # 60 seconds default
-    PINECONE_INDEX_STATS_TIMEOUT: float = float(os.getenv("PINECONE_INDEX_STATS_TIMEOUT", "15.0"))  # 15 seconds default
+    PINECONE_QUERY_TIMEOUT: float = float(os.environ.get("PINECONE_QUERY_TIMEOUT", "30.0"))  # 30 seconds default
+    PINECONE_UPSERT_TIMEOUT: float = float(os.environ.get("PINECONE_UPSERT_TIMEOUT", "60.0"))  # 60 seconds default
+    PINECONE_INDEX_STATS_TIMEOUT: float = float(os.environ.get("PINECONE_INDEX_STATS_TIMEOUT", "15.0"))  # 15 seconds default
     
     # Query cache settings
-    QUERY_CACHE_SIZE: int = int(os.getenv("QUERY_CACHE_SIZE", "100"))  # 100 entries default
-    QUERY_CACHE_TTL: int = int(os.getenv("QUERY_CACHE_TTL", "300"))  # 5 minutes TTL default
+    QUERY_CACHE_SIZE: int = int(os.environ.get("QUERY_CACHE_SIZE", "100"))  # 100 entries default
+    QUERY_CACHE_TTL: int = int(os.environ.get("QUERY_CACHE_TTL", "300"))  # 5 minutes TTL default
     
     # Beta Authentication Settings
-    BETA_ENABLED: bool = True
-    BETA_PASSWORD: str = os.getenv("COSMOS_BETA_PASSWORD", "CosmosClosedBeta2025")
-    BETA_SESSION_TIMEOUT: int = 60 * 60  # 60 minutes in seconds
+    BETA_ENABLED: bool = os.environ.get("BETA_ENABLED", "true").lower() == "true"
+    BETA_PASSWORD: str = os.environ.get("COSMOS_BETA_PASSWORD", "")
+    BETA_SESSION_TIMEOUT: int = int(os.environ.get("BETA_SESSION_TIMEOUT", "3600"))  # 60 minutes in seconds
+    AUTH_CLEANUP_INTERVAL_HOURS: int = int(os.environ.get("AUTH_CLEANUP_INTERVAL_HOURS", "12"))  # Run cleanup job every 12 hours
     
+    # Admin settings
+    ADMIN_EMAILS: str = os.environ.get("ADMIN_EMAILS", "")
+    
+    @field_validator("ADMIN_EMAILS", mode="after")
+    @classmethod
+    def parse_admin_emails(cls, v: str) -> List[str]:
+        """Parse admin emails from string to list"""
+        if not v:
+            return []
+            
+        if isinstance(v, list):
+            # If it's already a list, normalize each email
+            return [email.strip().lower() for email in v if email and isinstance(email, str)]
+            
+        if isinstance(v, str):
+            # If it's a string, split by comma and normalize
+            return [email.strip().lower() for email in v.split(",") if email.strip()]
+            
+        # Fallback to empty list for any other type
+        return []
+
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, extra='ignore')
 
     @field_validator('SECRET_KEY', mode='before')
-    @classmethod # Needs to be classmethod for field_validator
-    def check_secret_key_production(cls, v, info): # Pydantic v2 validator signature
-        # Pydantic v2: Access validation context or model data via 'info'
-        # Assuming model_dump() gives the data being validated if info.data isn't directly available
-        # Or rely on accessing environment directly if needed, though using model data is cleaner
-        # Let's assume info.data works as intended by pydantic-settings
+    @classmethod
+    def check_secret_key_production(cls, v, info):
+        # Check environment
         try:
-            env = info.data.get('ENVIRONMENT', 'development') # Access other fields via info.data
+            env = info.data.get('ENVIRONMENT', 'development')
         except AttributeError:
-             # Fallback if info.data is not available (might happen depending on exact pydantic version/usage)
-             # This is less ideal as it re-reads the env var
-             env = os.getenv('ENVIRONMENT', 'development')
+            env = os.getenv('ENVIRONMENT', 'development')
 
         default_key = "PLEASE_CHANGE_ME_IN_PRODUCTION_ENV"
         if env.lower() == 'production' and v == default_key:

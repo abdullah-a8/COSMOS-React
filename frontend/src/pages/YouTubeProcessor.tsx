@@ -8,7 +8,7 @@ import { Link } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { PanelLeft, PanelRight, Youtube, Settings } from "lucide-react";
 import { useDevice } from "../hooks/useDevice";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 
 const YouTubeProcessor: React.FC = () => {
   const { isMobile } = useDevice();
@@ -120,12 +120,19 @@ const YouTubeProcessor: React.FC = () => {
         <main className={`flex-1 ${isMobile ? 'p-3' : 'p-4 md:p-8'} transition-all duration-300 ${!isMobile && isSidebarOpen ? "ml-80" : "ml-0"}`}>
           <div className={`${isMobile ? 'mx-0' : 'max-w-4xl mx-auto'}`}>
             <div className={`${isMobile ? 'mb-4' : 'mb-8'}`}>
-                <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl md:text-4xl'} font-bold mb-2 flex items-center text-white`}>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ type: "spring", stiffness: 100, damping: 12 }}
+                  className="flex items-center gap-3 mb-2"
+                >
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-red-600 flex items-center justify-center shadow-[0_0_20px_rgba(147,51,234,0.3)]">
+                    <Youtube className={`${isMobile ? 'h-5 w-5' : 'h-6 w-6'} text-white`} />
+                  </div>
+                  <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl md:text-4xl'} font-bold bg-gradient-to-r from-purple-400 via-fuchsia-300 to-indigo-400 bg-clip-text text-transparent`}>
                     {isMobile ? 'YouTube Processor' : 'YouTube Transcript Processor'}
-                    <span className="ml-2 text-purple-400">
-                       <Youtube className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8'}`} />
-                    </span>
-                </h1>
+                  </h1>
+                </motion.div>
                 {!isMobile && (
                   <p className="text-lg text-gray-300">
                     Extract, process, and add YouTube video transcripts to your knowledge base for later retrieval.

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { SparklesCore } from '../components/sparkles';
 import { useDevice } from '../hooks/useDevice';
+import { useCsrf } from '../hooks/useCsrf';
 import { useSearchParams, useLocation } from 'react-router-dom';
 
 export default function AuthScreen() {
@@ -9,6 +10,7 @@ export default function AuthScreen() {
   const { isMobile } = useDevice();
   const [searchParams] = useSearchParams();
   const location = useLocation();
+  const { csrfToken } = useCsrf();
   
   // Check for error parameter in URL
   useEffect(() => {
@@ -17,6 +19,12 @@ export default function AuthScreen() {
       setError('Invalid access key. Please try again.');
     } else if (errorParam === 'system') {
       setError('An unexpected error occurred. Please try again.');
+    } else if (errorParam === 'expired') {
+      setError('Your session has expired. Please log in again.');
+    } else if (errorParam === 'unauthorized') {
+      setError('You need to be authenticated to access this resource.');
+    } else if (errorParam === 'security') {
+      setError('Security validation failed. Please refresh the page and try again.');
     }
   }, [searchParams]);
   
@@ -46,6 +54,11 @@ export default function AuthScreen() {
     setError(null);
     
     const formData = new FormData(e.currentTarget);
+    
+    // Add CSRF token to form data if available
+    if (csrfToken) {
+      formData.append('csrf_token', csrfToken);
+    }
     
     try {
       // Use the same endpoint as the existing auth system

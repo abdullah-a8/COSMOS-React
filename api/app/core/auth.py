@@ -1,28 +1,18 @@
-import os
-import time
-import secrets
 import logging
-import json
 from typing import Dict, Optional, List, Union
 from fastapi import Request, Response, HTTPException, status
-from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, JSONResponse
+from fastapi.responses import RedirectResponse, JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from .config import settings
+from .auth_service import (
+    validate_access_code, 
+    create_session, 
+    validate_session,
+    SESSION_TOKEN_NAME
+)
 
 logger = logging.getLogger(__name__)
-
-# Load password from environment or use default
-BETA_PASSWORD = os.getenv("COSMOS_BETA_PASSWORD", "CosmosClosedBeta2025")
-# Session timeout in seconds (60 minutes)
-SESSION_TIMEOUT = 60 * 60  
-# Session token name
-SESSION_TOKEN_NAME = "cosmos_beta_session"
-# Active sessions store
-ACTIVE_SESSIONS: Dict[str, float] = {}
-# Periodic cleanup interval (10 minutes)
-CLEANUP_INTERVAL = 600
-LAST_CLEANUP = time.time()
 
 # Path exclusions
 EXCLUDED_PATHS = [
@@ -31,6 +21,8 @@ EXCLUDED_PATHS = [
     "/api/v1/openapi.json",
     "/api/v1/health",
     "/api/v1/auth-status",
+    "/api/v1/auth/refresh-session",
+    "/api/v1/csrf-token",
     "/favicon.ico",
     "/cosmos_app.png",
     "/auth"
@@ -40,32 +32,6 @@ EXCLUDED_PATHS = [
 STATIC_PATH_PREFIXES = [
     "/assets/",
 ]
-
-def clean_expired_sessions():
-    """Remove expired sessions from memory"""
-    global LAST_CLEANUP
-    current_time = time.time()
-    
-    # Only clean up periodically to avoid doing this operation too frequently
-    if current_time - LAST_CLEANUP < CLEANUP_INTERVAL:
-        return
-        
-    expired = []
-    for token, timestamp in ACTIVE_SESSIONS.items():
-        if current_time - timestamp > SESSION_TIMEOUT:
-            expired.append(token)
-            
-    for token in expired:
-        ACTIVE_SESSIONS.pop(token, None)
-        
-    LAST_CLEANUP = current_time
-    
-    if expired:
-        logger.info(f"Cleaned {len(expired)} expired sessions")
-
-def create_session_token() -> str:
-    """Create a new random session token"""
-    return secrets.token_urlsafe(32)
 
 def is_path_excluded(path: str) -> bool:
     """Check if the path should be excluded from auth protection"""
@@ -78,26 +44,13 @@ def is_path_excluded(path: str) -> bool:
             
     return False
 
-def check_auth(request: Request) -> bool:
-    """Check if the request is authenticated.
-    
-    Returns:
-        bool: True if authenticated, False otherwise
-    """
-    session_token = request.cookies.get(SESSION_TOKEN_NAME)
-    
-    # If token exists and is valid, user is authenticated
-    if session_token and session_token in ACTIVE_SESSIONS:
-        # Refresh the session timestamp
-        ACTIVE_SESSIONS[session_token] = time.time()
-        return True
-    
-    return False
-
 class BetaAuthMiddleware(BaseHTTPMiddleware):
     """Middleware for handling closed beta authentication"""
     
     async def dispatch(self, request: Request, call_next):
+        # Get database session
+        db = request.state.db
+        
         # Only apply auth if BETA_ENABLED is True
         if not getattr(settings, "BETA_ENABLED", True):
             return await call_next(request)
@@ -108,16 +61,27 @@ class BetaAuthMiddleware(BaseHTTPMiddleware):
         if is_path_excluded(path):
             # Special case for auth-status endpoint
             if path == "/api/v1/auth-status":
-                is_authenticated = check_auth(request)
-                return JSONResponse(content={"authenticated": is_authenticated})
+                session_token = request.cookies.get(SESSION_TOKEN_NAME)
+                is_authenticated = await validate_session(db, session_token)
+                
+                # Check admin status if authenticated
+                is_admin = False
+                if is_authenticated:
+                    from .auth_service import is_admin_session
+                    is_admin = await is_admin_session(db, session_token)
+                    logger.info(f"Auth status middleware - User is authenticated, admin status: {is_admin}")
+                
+                # Always include is_admin in the response
+                return JSONResponse(content={
+                    "authenticated": is_authenticated,
+                    "is_admin": is_admin
+                })
             
             return await call_next(request)
         
         # Check for authentication
-        is_authenticated = check_auth(request)
-        
-        # Clean expired sessions periodically
-        clean_expired_sessions()
+        session_token = request.cookies.get(SESSION_TOKEN_NAME)
+        is_authenticated = await validate_session(db, session_token)
         
         # If authenticated, let the request through
         if is_authenticated:
@@ -130,13 +94,77 @@ class BetaAuthMiddleware(BaseHTTPMiddleware):
                 form_data = await request.form()
                 password = form_data.get("password", "")
                 
-                # Get the required password
-                required_password = getattr(settings, "BETA_PASSWORD", BETA_PASSWORD)
+                # Check CSRF token if provided (for enhanced security)
+                csrf_token = form_data.get("csrf_token")
+                if csrf_token:
+                    from .csrf import CSRF_TOKEN_NAME
+                    cookie_token = request.cookies.get(CSRF_TOKEN_NAME)
+                    
+                    # If a token was provided but doesn't match, reject the request
+                    if cookie_token and csrf_token != cookie_token:
+                        logger.warning("CSRF token mismatch in authentication attempt")
+                        return RedirectResponse(
+                            url="/auth?error=security",
+                            status_code=status.HTTP_303_SEE_OTHER
+                        )
                 
-                if password == required_password:
+                # Log authentication attempt (without the password)
+                request_ip = request.client.host if request.client else "unknown"
+                logger.info(f"Authentication attempt from {request_ip}")
+                
+                if await validate_access_code(db, password):
                     # Authentication successful, create session
-                    session_token = create_session_token()
-                    ACTIVE_SESSIONS[session_token] = time.time()
+                    
+                    # Check if this is an admin access
+                    # You can add your admin identification logic here
+                    # For example, you could have a specific admin invite code pattern,
+                    # check against an admin email list, etc.
+                    
+                    # For now, we'll check if the invite code is associated with an admin email
+                    from ..models.auth import InviteCode
+                    from sqlalchemy import select
+                    
+                    is_admin = False
+                    
+                    # Check if this is a developer/admin based on email pattern
+                    admin_emails_setting = getattr(settings, "ADMIN_EMAILS", "")
+                    
+                    # Ensure admin_emails is a list by using the settings parser
+                    admin_emails = []
+                    if isinstance(admin_emails_setting, list):
+                        admin_emails = admin_emails_setting
+                    elif isinstance(admin_emails_setting, str):
+                        admin_emails = [email.strip().lower() for email in admin_emails_setting.split(",") if email.strip()]
+                    
+                    # Log admin emails setting and its type
+                    logger.info(f"Admin emails from settings: {admin_emails!r} (type: {type(admin_emails).__name__})")
+                    
+                    # Find the invite code used for authentication
+                    stmt = select(InviteCode).where(InviteCode.is_active == True)
+                    result = await db.execute(stmt)
+                    invite_codes = result.scalars().all()
+                    
+                    for invite_code in invite_codes:
+                        if invite_code.email and InviteCode.verify_code(password, invite_code.code_hash):
+                            # Normalize email for comparison (lowercase, strip)
+                            invite_email = invite_code.email.strip().lower() if invite_code.email else ""
+                            
+                            # Log the email comparison
+                            logger.info(f"Checking if '{invite_email}' is in admin list: {admin_emails}")
+                            
+                            if invite_email in admin_emails:
+                                is_admin = True
+                                logger.info(f"Admin authentication from {request_ip}, admin email: {invite_email}")
+                            break
+                    
+                    session_token = await create_session(
+                        db, 
+                        expires_minutes=getattr(settings, "BETA_SESSION_TIMEOUT", 60),
+                        is_admin=is_admin
+                    )
+                    
+                    # Log successful authentication
+                    logger.info(f"Successful authentication from {request_ip}")
                     
                     # Create redirect response
                     response = Response(
@@ -145,7 +173,7 @@ class BetaAuthMiddleware(BaseHTTPMiddleware):
                     )
                     
                     # Set the session cookie
-                    timeout = getattr(settings, "BETA_SESSION_TIMEOUT", SESSION_TIMEOUT)
+                    timeout = getattr(settings, "BETA_SESSION_TIMEOUT", 60*60)
                     response.set_cookie(
                         key=SESSION_TOKEN_NAME,
                         value=session_token,
@@ -157,6 +185,9 @@ class BetaAuthMiddleware(BaseHTTPMiddleware):
                     
                     return response
                 else:
+                    # Log failed authentication
+                    logger.warning(f"Failed authentication attempt from {request_ip}")
+                    
                     # Failed authentication - redirect to auth page with error
                     return RedirectResponse(
                         url="/auth?error=invalid",
