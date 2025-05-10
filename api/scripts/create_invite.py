@@ -1,8 +1,12 @@
-from app.models.auth import InviteCode
+from api.app.models.auth import InviteCode
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 import asyncio
 import os
+import sys
+
+# Add project root to Python path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
 async def create_invite():
     db_url = os.environ.get('DATABASE_URL').replace('postgres://', 'postgresql+psycopg://')
