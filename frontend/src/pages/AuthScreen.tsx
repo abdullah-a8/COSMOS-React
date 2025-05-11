@@ -16,11 +16,15 @@ export default function AuthScreen() {
   useEffect(() => {
     const errorParam = searchParams.get('error');
     if (errorParam === 'invalid') {
-      setError('Invalid access key. Please try again.');
-    } else if (errorParam === 'system') {
-      setError('An unexpected error occurred. Please try again.');
+      setError('Invalid access key. Please check and try again.');
     } else if (errorParam === 'expired') {
-      setError('Your session has expired. Please log in again.');
+      setError('This access key has expired. Please contact your administrator for a new key.');
+    } else if (errorParam === 'used') {
+      setError('This access key has reached its maximum usage limit. Please contact your administrator.');
+    } else if (errorParam === 'empty') {
+      setError('Please enter an access key.');
+    } else if (errorParam === 'system') {
+      setError('An unexpected error occurred. Please try again or contact support.');
     } else if (errorParam === 'unauthorized') {
       setError('You need to be authenticated to access this resource.');
     } else if (errorParam === 'security') {
@@ -61,22 +65,27 @@ export default function AuthScreen() {
     }
     
     try {
-      // Use the same endpoint as the existing auth system
-      const response = await fetch('/cosmos-auth', {
-        method: 'POST',
-        body: formData,
-      });
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = '/cosmos-auth';
+      form.style.display = 'none';
       
-      // If successful, the server will set the cookie and redirect
-      if (response.ok) {
-        // If redirect doesn't happen automatically, handle it manually
-        const returnPath = location.state?.from?.pathname || '/';
-        window.location.href = returnPath;
-      } else {
-        setError('Invalid access key. Please try again.');
-        setIsLoading(false);
+      // Add the form data including password and CSRF token
+      for (const [key, value] of formData.entries()) {
+        const input = document.createElement('input');
+        input.type = key === 'password' ? 'password' : 'hidden';
+        input.name = key;
+        input.value = value.toString();
+        form.appendChild(input);
       }
+      
+      // Add the form to the document and submit it
+      document.body.appendChild(form);
+      form.submit();
+      
+      // The page will navigate away, so no need to handle the response or clean up the form
     } catch (err) {
+      console.error('Error during authentication:', err);
       setError('An unexpected error occurred. Please try again.');
       setIsLoading(false);
     }

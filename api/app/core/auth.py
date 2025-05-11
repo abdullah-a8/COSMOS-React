@@ -112,7 +112,10 @@ class BetaAuthMiddleware(BaseHTTPMiddleware):
                 request_ip = request.client.host if request.client else "unknown"
                 logger.info(f"Authentication attempt from {request_ip}")
                 
-                if await validate_access_code(db, password):
+                # Use updated validation function that returns (is_valid, error_code)
+                is_valid, error_code = await validate_access_code(db, password)
+                
+                if is_valid:
                     # Authentication successful, create session
                     
                     # Check if this is an admin access
@@ -185,12 +188,12 @@ class BetaAuthMiddleware(BaseHTTPMiddleware):
                     
                     return response
                 else:
-                    # Log failed authentication
-                    logger.warning(f"Failed authentication attempt from {request_ip}")
+                    # Log failed authentication with specific error code
+                    logger.warning(f"Failed authentication attempt from {request_ip}: {error_code}")
                     
-                    # Failed authentication - redirect to auth page with error
+                    # Failed authentication - redirect to auth page with specific error code
                     return RedirectResponse(
-                        url="/auth?error=invalid",
+                        url=f"/auth?error={error_code}",
                         status_code=status.HTTP_303_SEE_OTHER
                     )
             except Exception as e:

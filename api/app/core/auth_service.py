@@ -10,12 +10,23 @@ logger = logging.getLogger(__name__)
 # Constants
 SESSION_TOKEN_NAME = "cosmos_beta_session"
 
-async def validate_access_code(db: AsyncSession, code: str) -> bool:
-    """Validate an access code against the database"""
+async def validate_access_code(db: AsyncSession, code: str) -> tuple[bool, str]:
+    """Validate an access code against the database
+    
+    Returns:
+        tuple[bool, str]: A tuple containing (is_valid, error_code)
+            where error_code is one of:
+            - "" (empty string): Valid code
+            - "empty": Empty code provided
+            - "invalid": Code doesn't match any known code
+            - "expired": Code exists but has expired
+            - "used": Code exists but has reached max redemptions
+            - "system": System error occurred
+    """
     # Input validation
     if not code:
         logger.warning("Empty access code provided in validation attempt")
-        return False
+        return False, "empty"
         
     # Find all active, non-expired codes
     stmt = select(InviteCode).where(
@@ -38,7 +49,7 @@ async def validate_access_code(db: AsyncSession, code: str) -> bool:
         
         if not codes:
             logger.warning("No active invite codes found in database during validation")
-            return False
+            return False, "system"
         
         logger.debug(f"Checking access code against {len(codes)} active invite codes")
         
@@ -53,14 +64,49 @@ async def validate_access_code(db: AsyncSession, code: str) -> bool:
                 logger.info(f"Valid access code used{email_info}. Redemption count: {invite_code.redemption_count}/{invite_code.max_redemptions or 'unlimited'}")
                 
                 await db.commit()
-                return True
+                return True, ""
         
-        # No matching code found
+        # No match in active codes - check if it's an expired or used-up code
+        # Check for expired codes
+        expired_stmt = select(InviteCode).where(
+            and_(
+                InviteCode.is_active == True,
+                InviteCode.expires_at != None,
+                InviteCode.expires_at <= datetime.utcnow()
+            )
+        )
+        
+        result = await db.execute(expired_stmt)
+        expired_codes = result.scalars().all()
+        
+        for expired_code in expired_codes:
+            if InviteCode.verify_code(code, expired_code.code_hash):
+                logger.warning(f"Expired access code used. Expired at: {expired_code.expires_at}")
+                return False, "expired"
+        
+        # Check for maxed-out codes
+        used_stmt = select(InviteCode).where(
+            and_(
+                InviteCode.is_active == True,
+                InviteCode.max_redemptions > 0,
+                InviteCode.redemption_count >= InviteCode.max_redemptions
+            )
+        )
+        
+        result = await db.execute(used_stmt)
+        used_codes = result.scalars().all()
+        
+        for used_code in used_codes:
+            if InviteCode.verify_code(code, used_code.code_hash):
+                logger.warning(f"Used up access code. Max redemptions: {used_code.max_redemptions}")
+                return False, "used"
+        
+        # No matching code found at all
         logger.warning(f"Invalid access code provided in authentication attempt")
-        return False
+        return False, "invalid"
     except Exception as e:
         logger.error(f"Error validating access code: {str(e)}")
-        return False
+        return False, "system"
 
 async def create_session(db: AsyncSession, user_identifier=None, expires_minutes=60, is_admin=False) -> str:
     """Create a new session and save to database"""
