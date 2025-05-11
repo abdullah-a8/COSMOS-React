@@ -2,10 +2,15 @@ from sqlalchemy import Column, String, Integer, Boolean, DateTime, ForeignKey, J
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import expression
 import datetime
+from datetime import timezone
 import secrets
 from passlib.hash import pbkdf2_sha256
 
 Base = declarative_base()
+
+# Helper function for UTC time
+def get_utc_now():
+    return datetime.datetime.now(timezone.utc).replace(tzinfo=None)
 
 class InviteCode(Base):
     __tablename__ = "invite_codes"
@@ -30,7 +35,7 @@ class InviteCode(Base):
         # This creates a secure hash with salt automatically included
         code_hash = pbkdf2_sha256.hash(plain_code)
         
-        expires_at = datetime.datetime.utcnow() + datetime.timedelta(days=expires_days) if expires_days else None
+        expires_at = get_utc_now() + datetime.timedelta(days=expires_days) if expires_days else None
         
         return cls(
             code_hash=code_hash,
@@ -57,7 +62,7 @@ class Session(Base):
     def create(cls, user_identifier=None, expires_minutes=60):
         """Create a new session"""
         session_id = secrets.token_urlsafe(32)
-        expires_at = datetime.datetime.utcnow() + datetime.timedelta(minutes=expires_minutes)
+        expires_at = get_utc_now() + datetime.timedelta(minutes=expires_minutes)
         return cls(
             id=session_id,
             user_identifier=user_identifier,

@@ -1,7 +1,7 @@
 from ..models.auth import InviteCode, Session
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, or_, update, func
-from datetime import datetime
+from datetime import datetime, timezone
 import logging
 from ..core.config import settings
 
@@ -9,6 +9,11 @@ logger = logging.getLogger(__name__)
 
 # Constants
 SESSION_TOKEN_NAME = "cosmos_beta_session"
+
+# Helper function for UTC time
+def get_utc_now():
+    """Return current UTC time as a timezone-naive datetime (for DB compatibility)"""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 async def validate_access_code(db: AsyncSession, code: str) -> tuple[bool, str]:
     """Validate an access code against the database
@@ -34,7 +39,7 @@ async def validate_access_code(db: AsyncSession, code: str) -> tuple[bool, str]:
             InviteCode.is_active == True,
             or_(
                 InviteCode.expires_at == None,
-                InviteCode.expires_at > datetime.utcnow()
+                InviteCode.expires_at > get_utc_now()
             ),
             or_(
                 InviteCode.max_redemptions == 0,  # Unlimited
@@ -70,9 +75,8 @@ async def validate_access_code(db: AsyncSession, code: str) -> tuple[bool, str]:
         # Check for expired codes
         expired_stmt = select(InviteCode).where(
             and_(
-                InviteCode.is_active == True,
                 InviteCode.expires_at != None,
-                InviteCode.expires_at <= datetime.utcnow()
+                InviteCode.expires_at <= get_utc_now()
             )
         )
         
@@ -81,7 +85,8 @@ async def validate_access_code(db: AsyncSession, code: str) -> tuple[bool, str]:
         
         for expired_code in expired_codes:
             if InviteCode.verify_code(code, expired_code.code_hash):
-                logger.warning(f"Expired access code used. Expired at: {expired_code.expires_at}")
+                status = "active" if expired_code.is_active else "deactivated"
+                logger.warning(f"Expired access code used ({status}). Expired at: {expired_code.expires_at}")
                 return False, "expired"
         
         # Check for maxed-out codes
@@ -140,7 +145,7 @@ async def validate_session(db: AsyncSession, session_id: str) -> bool:
         stmt = select(Session).where(
             and_(
                 Session.id == session_id,
-                Session.expires_at > datetime.utcnow()
+                Session.expires_at > get_utc_now()
             )
         )
         
@@ -149,7 +154,7 @@ async def validate_session(db: AsyncSession, session_id: str) -> bool:
         
         if session:
             # Check if session is about to expire soon (< 10 minutes)
-            time_remaining = (session.expires_at - datetime.utcnow()).total_seconds()
+            time_remaining = (session.expires_at - get_utc_now()).total_seconds()
             if time_remaining < 600:  # Less than 10 minutes
                 session_id_prefix = session_id[:8] if session_id else "unknown"
                 logger.info(f"Session {session_id_prefix}... is about to expire in {int(time_remaining)} seconds")
@@ -165,7 +170,7 @@ async def validate_session(db: AsyncSession, session_id: str) -> bool:
 async def cleanup_expired_sessions(db: AsyncSession) -> int:
     """Clean up expired sessions. Returns count of deleted sessions."""
     try:
-        stmt = select(Session).where(Session.expires_at <= datetime.utcnow())
+        stmt = select(Session).where(Session.expires_at <= get_utc_now())
         result = await db.execute(stmt)
         expired = result.scalars().all()
         
@@ -193,7 +198,7 @@ async def cleanup_expired_invite_codes(db: AsyncSession) -> int:
         stmt = select(InviteCode).where(
             and_(
                 InviteCode.expires_at != None,
-                InviteCode.expires_at <= datetime.utcnow(),
+                InviteCode.expires_at <= get_utc_now(),
                 InviteCode.is_active == True
             )
         )
@@ -229,7 +234,7 @@ async def is_admin_session(db: AsyncSession, session_id: str) -> bool:
         stmt = select(Session).where(
             and_(
                 Session.id == session_id,
-                Session.expires_at > datetime.utcnow()
+                Session.expires_at > get_utc_now()
             )
         )
         
