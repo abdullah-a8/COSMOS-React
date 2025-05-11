@@ -5,7 +5,7 @@ interface UseAuthOptions {
 }
 
 // Cache validity period in milliseconds
-const AUTH_CACHE_VALIDITY = 30 * 1000; // 30 seconds
+const AUTH_CACHE_VALIDITY = 300 * 1000; // 5 minutes (increased from 30 seconds)
 
 interface AuthCache {
   timestamp: number;
