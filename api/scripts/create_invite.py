@@ -51,6 +51,23 @@ async def create_invite():
         invite, plain_code = InviteCode.generate(email=admin_email, expires_days=None, max_redemptions=5)
         session.add(invite)
         await session.commit()
+        
+        # Send email with invite code details
+        if admin_email:
+            try:
+                from app.services.email_service import send_invite_code_email
+                await send_invite_code_email(
+                    to_email=admin_email,
+                    invite_code=plain_code,
+                    max_redemptions=invite.max_redemptions,
+                    expires_at=invite.expires_at,
+                    redemption_count=invite.redemption_count
+                )
+                print(f"Invite code email sent to {admin_email}")
+            except Exception as e:
+                print(f"Failed to send invite code email: {str(e)}")
+                # Continue even if email sending fails
+        
         print(f'Created admin invite code: {plain_code} for {admin_email}')
 
 if __name__ == "__main__":

@@ -48,6 +48,7 @@ The system combines Retrieval-Augmented Generation (RAG) for knowledge-based cha
 ### 🔒 Authentication System
 - **Closed Beta Access Control**: Limit access to invited users only with a secure invite code system.
 - **Invite Code Management**: Create and manage invite codes with customizable expiration dates and usage limits.
+- **Email Notifications**: Send beautifully styled invite emails to users with their invite code details.
 - **Admin Panel**: Special access for administrators to manage the platform and create new invite codes.
 - **CSRF Protection**: Secure form submissions against cross-site request forgery attacks.
 - **Session Management**: Automatically handles user sessions, cleanup of expired sessions, and more.
@@ -252,6 +253,7 @@ These extensions are built using pybind11 for seamless Python integration and im
     PINECONE_INDEX_NAME="your_pinecone_index_name"
     WEBSHARE_USERNAME="your_webshare_username"
     WEBSHARE_PASSWORD="your_webshare_password"
+    RESEND_API_KEY="your_resend_api_key"  # Required for sending invite code emails
     
     # Authentication Settings
     SECRET_KEY="your_secure_random_key"  # Generate with: python -c "import secrets; print(secrets.token_urlsafe(32))"
@@ -404,12 +406,27 @@ BETA_SESSION_TIMEOUT=3600            # Session duration in seconds
 ADMIN_EMAILS="admin@example.com"     # Comma-separated list of admin emails
 AUTH_CLEANUP_INTERVAL_HOURS=12       # How often to clean expired sessions
 
+# Email Settings
+RESEND_API_KEY="your_resend_api_key" # API key for Resend.com email service
+
 # Database Connection Pool Settings (optional)
 DB_POOL_SIZE=20
 DB_MAX_OVERFLOW=10
 DB_POOL_TIMEOUT=30
 DB_POOL_RECYCLE=1800
 ```
+
+#### Email Notifications Setup
+
+COSMOS uses Resend (https://resend.com) to send email notifications for invite codes. To set up email notifications:
+
+1. Sign up for a Resend account
+2. Verify your domain (e.g., `invite.yourdomain.com`)
+3. Create an API key in the Resend dashboard
+4. Add the API key to your .env file as `RESEND_API_KEY`
+5. Update the sender address in `api/app/services/email_service.py` to use your domain (e.g., `"COSMOS Invites <no-reply@invite.yourdomain.com>"`)
+
+When an invite code is generated, recipients will automatically receive a styled email with their invite code details.
 
 ## Project Structure
 
@@ -492,6 +509,7 @@ To deploy:
     heroku config:set GROQ_API_KEY="your-groq-api-key"
     heroku config:set PINECONE_API_KEY="your-pinecone-api-key"
     heroku config:set PINECONE_INDEX_NAME="your-pinecone-index-name"
+    heroku config:set RESEND_API_KEY="your-resend-api-key"
     ```
 5.  Push your code to Heroku: `git push heroku main`
 6.  Run database migrations: `heroku run alembic upgrade head`

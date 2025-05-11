@@ -116,6 +116,22 @@ async def setup_auth():
             session.add(invite)
             await session.commit()
             
+            # Send email with invite code details if email is provided
+            if email:
+                try:
+                    from app.services.email_service import send_invite_code_email
+                    await send_invite_code_email(
+                        to_email=email,
+                        invite_code=plain_code,
+                        max_redemptions=invite.max_redemptions,
+                        expires_at=invite.expires_at,
+                        redemption_count=invite.redemption_count
+                    )
+                    print(f"Invite code email sent to {email}")
+                except Exception as e:
+                    print(f"Failed to send invite code email: {str(e)}")
+                    # Continue even if email sending fails
+            
             print("\n==================================")
             print(f"Created invite code: {plain_code}")
             print("==================================\n")

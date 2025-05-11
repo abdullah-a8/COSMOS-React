@@ -99,6 +99,30 @@ async def create_invite_code(
     await db.commit()
     await db.refresh(invite_obj)
     
+    # Send email if email address is provided
+    if data.email:
+        try:
+            from ..services.email_service import send_invite_code_email
+            from ..email_templates.invite_code_email import calculate_days_remaining, format_date
+            
+            # Calculate values for the template
+            days_remaining = calculate_days_remaining(invite_obj.expires_at)
+            formatted_expiry = format_date(invite_obj.expires_at)
+
+            # Send the email using Resend SDK
+            await send_invite_code_email(
+                to_email=data.email,
+                invite_code=plain_code,
+                max_redemptions=invite_obj.max_redemptions,
+                expires_at=invite_obj.expires_at,
+                redemption_count=invite_obj.redemption_count
+            )
+            
+            logger.info(f"Invite code email sent to {data.email}")
+        except Exception as e:
+            logger.error(f"Failed to send invite code email: {str(e)}")
+            # Continue even if email sending fails
+    
     # Return the plain code in the response - this is the only time it's available
     return {
         "id": invite_obj.id,

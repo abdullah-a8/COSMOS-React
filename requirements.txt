@@ -43,3 +43,6 @@ APScheduler==3.11.0
 
 # CORS
 starlette==0.46.2
+
+# Email
+resend==2.9.0
