@@ -55,7 +55,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 // Admin-only route component
 function AdminRoute({ children }: { children: React.ReactNode }) {
   const location = useLocation();
-  const { isAuthenticated, isAdmin, isLoading, checkAuthStatus } = useAuth({ refreshInterval: 45 });
+  const { isAuthenticated, isAdmin, isLoading } = useAuth({ refreshInterval: 45 });
   const [showLoader, setShowLoader] = useState(false); // Start with false to avoid flicker
   
   // Only show loading screen after a longer delay to improve UX when navigating
@@ -73,7 +73,7 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
 
   // Optimization: If we already know user is admin, render immediately
   // This helps avoid unnecessary loading states during navigation
-  if (isAdmin === true && isAuthenticated === true) {
+  if (isAdmin && isAuthenticated) {
     return <>{children}</>;
   }
 
@@ -95,8 +95,8 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
   
-  // Handle non-admin access
-  if (isAdmin === false) {
+  // Handle non-admin access - only redirect if we're certain user is not admin
+  if (isAdmin === false && isAuthenticated) {
     return <Navigate to="/" replace />;
   }
   

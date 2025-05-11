@@ -4,7 +4,7 @@ import { useCsrf } from '../hooks/useCsrf';
 import { motion } from 'framer-motion'; // Import motion for animations
 import { useDevice } from '../hooks/useDevice'; // Import useDevice hook
 import { Key } from 'lucide-react'; // Import icons
-import { useAdminStore, InviteCode as StoreInviteCode, ADMIN_CACHE_VALIDITY } from '../store/adminStore';
+import { useAdminStore, ADMIN_CACHE_VALIDITY } from '../store/adminStore';
 
 // Define types for our invite code data
 interface InviteCode {
@@ -46,6 +46,7 @@ interface DataCache<T> {
 // Email validation regex - balances validation strictness with practical use
 const EMAIL_REGEX = /^(?!\.)(?!.*\.\.)([a-z0-9_'+\-\.]*)[a-z0-9_'+\-]@([a-z0-9][a-z0-9\-]*\.)+[a-z]{2,}$/i;
 
+// Get values and functions from the admin store
 export default function AdminPanel() {
   // Get values and functions from the admin store
   const storeInviteCodes = useAdminStore(state => state.inviteCodes);
@@ -55,7 +56,6 @@ export default function AdminPanel() {
   const storeSetInviteCodes = useAdminStore(state => state.setInviteCodes);
   const storeSetError = useAdminStore(state => state.setError);
   const storeSetLoading = useAdminStore(state => state.setLoading);
-  const storeClearCache = useAdminStore(state => state.clearCache);
   
   // Local component state
   const [inviteCodes, setInviteCodes] = useState<InviteCode[]>(storeInviteCodes);
