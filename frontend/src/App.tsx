@@ -55,30 +55,30 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 // Admin-only route component
 function AdminRoute({ children }: { children: React.ReactNode }) {
   const location = useLocation();
-  const { isAuthenticated, isAdmin, isLoading } = useAuth({ refreshInterval: 45 });
-  const [showLoader, setShowLoader] = useState(true);
+  const { isAuthenticated, isAdmin, isLoading, checkAuthStatus } = useAuth({ refreshInterval: 45 });
+  const [showLoader, setShowLoader] = useState(false); // Start with false to avoid flicker
   
-  // Only show loading screen after a brief delay
+  // Only show loading screen after a longer delay to improve UX when navigating
   useEffect(() => {
     if (!isLoading) {
       setShowLoader(false);
     } else {
-      // Add slight delay before showing loader to prevent flicker on fast auth checks
+      // Increased delay to prevent flicker on fast navigations
       const timer = setTimeout(() => {
         setShowLoader(isLoading);
-      }, 100);
+      }, 300); // Increased from 100ms to 300ms for better UX
       return () => clearTimeout(timer);
     }
   }, [isLoading]);
 
-  // Preload optimization - if isAdmin is already known to be true (from cache), 
-  // we can start rendering the children immediately without waiting for the check
-  if (isAdmin && isAuthenticated && !isLoading) {
+  // Optimization: If we already know user is admin, render immediately
+  // This helps avoid unnecessary loading states during navigation
+  if (isAdmin === true && isAuthenticated === true) {
     return <>{children}</>;
   }
 
+  // Only show loader for actual pending auth checks, not for quick navigations
   if (showLoader && isLoading) {
-    // Show loading screen
     return (
       <div className="flex flex-col items-center justify-center h-[80vh]">
         <div className="w-16 h-16 relative">
@@ -90,16 +90,17 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
     );
   }
   
+  // Handle unauthorized access
   if (isAuthenticated === false) {
-    // Redirect to auth page with return path
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
   
-  if (!isAdmin) {
-    // Redirect to home page if not admin
+  // Handle non-admin access
+  if (isAdmin === false) {
     return <Navigate to="/" replace />;
   }
   
+  // Fall back to children if auth check is still in progress but we don't want to show loader yet
   return <>{children}</>;
 }
 

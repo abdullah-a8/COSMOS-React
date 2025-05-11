@@ -32,10 +32,23 @@ export function useAuth({ refreshInterval = 45 }: UseAuthOptions = {}) {
       // Check cache first if not forcing refresh
       if (!forceRefresh && authCache && (Date.now() - authCache.timestamp < AUTH_CACHE_VALIDITY)) {
         if (DEBUG) console.log('Using cached auth status');
-        setIsAuthenticated(authCache.isAuthenticated);
-        setIsAdmin(authCache.isAdmin);
+        
+        // Return immediately with cached values
+        if (!isAuthenticated && authCache.isAuthenticated) {
+          setIsAuthenticated(authCache.isAuthenticated);
+        }
+        
+        if (isAdmin !== authCache.isAdmin) {
+          setIsAdmin(authCache.isAdmin);
+        }
+        
         setIsLoading(false);
         return authCache.isAuthenticated;
+      }
+      
+      // Only set loading if we're actually making a network request
+      if (!authCache || forceRefresh) {
+        setIsLoading(true);
       }
       
       const response = await fetch('/api/v1/auth-status');
@@ -46,10 +59,9 @@ export function useAuth({ refreshInterval = 45 }: UseAuthOptions = {}) {
       }
       
       const data = await response.json();
-      console.log('Auth status response:', data); // Debug logging
       
-      // Explicitly log authentication and admin status
       if (DEBUG) {
+        console.log('Auth status response:', data);
         console.log('✅ Authentication status:', data.authenticated);
         console.log('👑 Admin status:', !!data.is_admin);
         console.log('Admin status type:', typeof data.is_admin);
@@ -81,7 +93,7 @@ export function useAuth({ refreshInterval = 45 }: UseAuthOptions = {}) {
     } finally {
       setIsLoading(false);
     }
-  }, [authCache]);
+  }, [authCache, isAuthenticated, isAdmin]);
 
   // Function to refresh the session
   const refreshSession = useCallback(async (): Promise<boolean> => {

@@ -4,6 +4,7 @@ import { useCsrf } from '../hooks/useCsrf';
 import { motion } from 'framer-motion'; // Import motion for animations
 import { useDevice } from '../hooks/useDevice'; // Import useDevice hook
 import { Key } from 'lucide-react'; // Import icons
+import { useAdminStore, InviteCode as StoreInviteCode, ADMIN_CACHE_VALIDITY } from '../store/adminStore';
 
 // Define types for our invite code data
 interface InviteCode {
@@ -34,7 +35,7 @@ interface CreateResponse {
 }
 
 // Cache configuration
-const DATA_CACHE_VALIDITY = 60 * 1000; // 1 minute cache validity
+const DATA_CACHE_VALIDITY = ADMIN_CACHE_VALIDITY; // Use the same cache validity from store
 
 interface DataCache<T> {
   data: T[];
@@ -46,10 +47,21 @@ interface DataCache<T> {
 const EMAIL_REGEX = /^(?!\.)(?!.*\.\.)([a-z0-9_'+\-\.]*)[a-z0-9_'+\-]@([a-z0-9][a-z0-9\-]*\.)+[a-z]{2,}$/i;
 
 export default function AdminPanel() {
-  const [inviteCodes, setInviteCodes] = useState<InviteCode[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [showActiveOnly, setShowActiveOnly] = useState(true);
+  // Get values and functions from the admin store
+  const storeInviteCodes = useAdminStore(state => state.inviteCodes);
+  const storeLastFetched = useAdminStore(state => state.lastFetched);
+  const storeActiveFilter = useAdminStore(state => state.activeFilter);
+  const storeError = useAdminStore(state => state.error);
+  const storeSetInviteCodes = useAdminStore(state => state.setInviteCodes);
+  const storeSetError = useAdminStore(state => state.setError);
+  const storeSetLoading = useAdminStore(state => state.setLoading);
+  const storeClearCache = useAdminStore(state => state.clearCache);
+  
+  // Local component state
+  const [inviteCodes, setInviteCodes] = useState<InviteCode[]>(storeInviteCodes);
+  const [isLoading, setIsLoading] = useState<boolean>(storeInviteCodes.length === 0);
+  const [error, setError] = useState<string | null>(storeError);
+  const [showActiveOnly, setShowActiveOnly] = useState<boolean>(storeActiveFilter);
   const [newCode, setNewCode] = useState<NewInviteCode>({
     email: '',
     expires_days: 30,
@@ -59,7 +71,7 @@ export default function AdminPanel() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
   
-  // Cache reference using useRef to persist between renders without causing re-renders
+  // We'll keep the ref for backward compatibility, but we'll primarily use the store
   const dataCache = useRef<DataCache<InviteCode> | null>(null);
   
   const navigate = useNavigate();
@@ -84,7 +96,20 @@ export default function AdminPanel() {
     }
   };
 
-  // Check if cache is valid
+  // Check if store cache is valid
+  const isStoreCacheValid = useCallback(() => {
+    if (storeInviteCodes.length === 0 || !storeLastFetched) return false;
+    
+    // Check timestamp validity
+    const isTimestampValid = Date.now() - storeLastFetched < DATA_CACHE_VALIDITY;
+    
+    // Check if filter criteria matches
+    const isFilterMatching = storeActiveFilter === showActiveOnly;
+    
+    return isTimestampValid && isFilterMatching;
+  }, [storeInviteCodes, storeLastFetched, storeActiveFilter, showActiveOnly]);
+
+  // Legacy cache check - keeping for compatibility
   const isCacheValid = useCallback(() => {
     if (!dataCache.current) return false;
     
@@ -99,8 +124,15 @@ export default function AdminPanel() {
 
   // Load invite codes when component mounts or filter changes
   const fetchInviteCodes = useCallback(async (forceRefresh = false) => {
-    // Use cache if available and not forced refresh
-    if (!forceRefresh && isCacheValid()) {
+    // First check the global store cache
+    if (!forceRefresh && isStoreCacheValid()) {
+      setInviteCodes(storeInviteCodes);
+      setIsLoading(false);
+      return;
+    }
+    
+    // Then check the legacy cache as fallback
+    if (!forceRefresh && !isStoreCacheValid() && isCacheValid()) {
       setInviteCodes(dataCache.current!.data);
       setIsLoading(false);
       return;
@@ -109,9 +141,12 @@ export default function AdminPanel() {
     // Only show loading indicator on initial load or forced refresh
     if (inviteCodes.length === 0 || forceRefresh) {
       setIsLoading(true);
+      storeSetLoading(true);
     }
     
     setError(null);
+    storeSetError(null);
+    
     try {
       const response = await fetch(`/api/v1/admin/invite-codes?active_only=${showActiveOnly}`);
       
@@ -126,26 +161,57 @@ export default function AdminPanel() {
       }
       
       const data = await response.json();
-      setInviteCodes(data);
       
-      // Update cache
+      // Update both local state and store
+      setInviteCodes(data);
+      storeSetInviteCodes(data, showActiveOnly);
+      
+      // Also update legacy cache for backward compatibility
       dataCache.current = {
         data,
         timestamp: Date.now(),
         filter: showActiveOnly
       };
     } catch (err) {
-      setError('Error loading invite codes. Please try again.');
+      const errorMsg = 'Error loading invite codes. Please try again.';
+      setError(errorMsg);
+      storeSetError(errorMsg);
       console.error('Error fetching invite codes:', err);
     } finally {
       setIsLoading(false);
+      storeSetLoading(false);
     }
-  }, [showActiveOnly, navigate, inviteCodes.length, isCacheValid]);
+  }, [
+    showActiveOnly, 
+    navigate, 
+    inviteCodes.length, 
+    isCacheValid, 
+    isStoreCacheValid, 
+    storeInviteCodes,
+    storeSetInviteCodes,
+    storeSetError,
+    storeSetLoading
+  ]);
 
-  // Effect for initial load and filter changes
+  // Effect to sync the component state with store state
+  useEffect(() => {
+    if (storeInviteCodes.length > 0 && storeActiveFilter === showActiveOnly) {
+      setInviteCodes(storeInviteCodes);
+    }
+  }, [storeInviteCodes, storeActiveFilter, showActiveOnly]);
+
+  // Effect to update the filter in the store when it changes locally
+  useEffect(() => {
+    // If filter changed, consider invalidating the cache
+    if (storeActiveFilter !== showActiveOnly) {
+      fetchInviteCodes(false);
+    }
+  }, [showActiveOnly, storeActiveFilter, fetchInviteCodes]);
+
+  // Effect for initial load
   useEffect(() => {
     fetchInviteCodes(false);
-  }, [fetchInviteCodes, showActiveOnly]);
+  }, [fetchInviteCodes]);
 
   const createInviteCode = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -158,6 +224,7 @@ export default function AdminPanel() {
     
     setIsGenerating(true);
     setError(null);
+    storeSetError(null);
     setEmailError(null);
     setGeneratedCode(null);
     
@@ -186,7 +253,9 @@ export default function AdminPanel() {
         max_redemptions: 1
       });
     } catch (err) {
-      setError('Error creating invite code. Please try again.');
+      const errorMsg = 'Error creating invite code. Please try again.';
+      setError(errorMsg);
+      storeSetError(errorMsg);
       console.error('Error creating invite code:', err);
     } finally {
       setIsGenerating(false);
@@ -199,6 +268,8 @@ export default function AdminPanel() {
     }
     
     setError(null);
+    storeSetError(null);
+    
     try {
       // Use fetchWithCsrf for DELETE request
       const response = await fetchWithCsrf(`/api/v1/admin/invite-codes/${id}`, {
@@ -212,7 +283,9 @@ export default function AdminPanel() {
       // Refresh the list with force refresh to bypass cache
       fetchInviteCodes(true);
     } catch (err) {
-      setError('Error deactivating invite code. Please try again.');
+      const errorMsg = 'Error deactivating invite code. Please try again.';
+      setError(errorMsg);
+      storeSetError(errorMsg);
       console.error('Error deactivating invite code:', err);
     }
   };

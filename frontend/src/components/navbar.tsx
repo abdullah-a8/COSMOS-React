@@ -11,7 +11,7 @@ import { useAuth } from "../hooks/useAuth"
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { isMobile } = useDevice();
-  const { isAdmin } = useAuth();
+  const { isAdmin } = useAuth({ refreshInterval: 0 });
   
   // Prevent body scroll when mobile menu is open
   useEffect(() => {
