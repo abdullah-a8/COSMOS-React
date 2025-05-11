@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from ..db.session import get_db
-from ..models.auth import InviteCode
-from ..core.auth_service import validate_session, is_admin_session
-from sqlalchemy import select
+from ..models.auth import InviteCode, Session
+from ..core.auth_service import SESSION_TOKEN_NAME
+from sqlalchemy import select, and_
 import logging
 from typing import List, Optional
 from pydantic import BaseModel, EmailStr
@@ -14,16 +14,41 @@ logger = logging.getLogger(__name__)
 
 # Admin authorization check
 async def admin_required(request: Request, db: AsyncSession = Depends(get_db)):
-    """Verify the user is an admin"""
-    session_token = request.cookies.get("cosmos_beta_session")
-    if not await validate_session(db, session_token):
+    """Verify the user is an admin with a single database query"""
+    session_token = request.cookies.get(SESSION_TOKEN_NAME)
+    
+    if not session_token:
+        logger.debug("No session token provided")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Authentication required"
         )
     
-    # Check if the user is an admin
-    if not await is_admin_session(db, session_token):
+    # Perform single query that checks both authentication and admin status
+    stmt = select(Session).where(
+        and_(
+            Session.id == session_token,
+            Session.expires_at > datetime.utcnow()
+        )
+    )
+    
+    result = await db.execute(stmt)
+    session = result.scalars().first()
+    
+    if not session:
+        logger.debug(f"Invalid or expired session: {session_token[:8] if session_token else 'none'}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required"
+        )
+    
+    # Check admin status from session metadata
+    is_admin = False
+    if session.session_metadata and isinstance(session.session_metadata, dict):
+        is_admin = bool(session.session_metadata.get("is_admin", False))
+    
+    if not is_admin:
+        logger.debug(f"Non-admin access attempt: {session_token[:8]}")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required"

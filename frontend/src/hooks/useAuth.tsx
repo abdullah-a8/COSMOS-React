@@ -4,6 +4,15 @@ interface UseAuthOptions {
   refreshInterval?: number; // In minutes
 }
 
+// Cache validity period in milliseconds
+const AUTH_CACHE_VALIDITY = 30 * 1000; // 30 seconds
+
+interface AuthCache {
+  timestamp: number;
+  isAuthenticated: boolean;
+  isAdmin: boolean;
+}
+
 // Enable verbose debugging
 const DEBUG = false;
 
@@ -13,11 +22,21 @@ export function useAuth({ refreshInterval = 45 }: UseAuthOptions = {}) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<any>(null);
+  const [authCache, setAuthCache] = useState<AuthCache | null>(null);
 
   // Function to check authentication status
-  const checkAuthStatus = useCallback(async () => {
+  const checkAuthStatus = useCallback(async (forceRefresh = false) => {
     try {
       if (DEBUG) console.log('Checking auth status...');
+      
+      // Check cache first if not forcing refresh
+      if (!forceRefresh && authCache && (Date.now() - authCache.timestamp < AUTH_CACHE_VALIDITY)) {
+        if (DEBUG) console.log('Using cached auth status');
+        setIsAuthenticated(authCache.isAuthenticated);
+        setIsAdmin(authCache.isAdmin);
+        setIsLoading(false);
+        return authCache.isAuthenticated;
+      }
       
       const response = await fetch('/api/v1/auth-status');
       
@@ -47,6 +66,13 @@ export function useAuth({ refreshInterval = 45 }: UseAuthOptions = {}) {
         setDebugInfo(data.debug_info);
       }
       
+      // Update auth cache
+      setAuthCache({
+        timestamp: Date.now(),
+        isAuthenticated: data.authenticated,
+        isAdmin: adminStatus
+      });
+      
       return data.authenticated;
     } catch (err) {
       console.error('Error checking authentication status:', err);
@@ -55,7 +81,7 @@ export function useAuth({ refreshInterval = 45 }: UseAuthOptions = {}) {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [authCache]);
 
   // Function to refresh the session
   const refreshSession = useCallback(async (): Promise<boolean> => {
@@ -72,6 +98,10 @@ export function useAuth({ refreshInterval = 45 }: UseAuthOptions = {}) {
         // If session refresh fails, update state
         setIsAuthenticated(false);
         setIsAdmin(false);
+        
+        // Clear auth cache
+        setAuthCache(null);
+        
         return false;
       }
       
@@ -89,6 +119,13 @@ export function useAuth({ refreshInterval = 45 }: UseAuthOptions = {}) {
         console.log('✅ Authentication refreshed');
         console.log('👑 Admin status after refresh:', adminStatus);
       }
+      
+      // Update auth cache after refresh
+      setAuthCache({
+        timestamp: Date.now(),
+        isAuthenticated: true,
+        isAdmin: adminStatus
+      });
       
       return true;
     } catch (err) {

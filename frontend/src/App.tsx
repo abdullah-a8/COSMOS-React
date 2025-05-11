@@ -10,14 +10,28 @@ import AdminPanel from './pages/AdminPanel';
 import { RoboAnimation } from './components/robo-animation';
 import { useDevice } from './hooks/useDevice';
 import { useAuth } from './hooks/useAuth';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 // Protected route component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const { isAuthenticated, isLoading } = useAuth({ refreshInterval: 45 });
+  const [showLoader, setShowLoader] = useState(true);
+  
+  // Only show loading screen after a brief delay
+  useEffect(() => {
+    if (!isLoading) {
+      setShowLoader(false);
+    } else {
+      // Add slight delay before showing loader to prevent flicker on fast auth checks
+      const timer = setTimeout(() => {
+        setShowLoader(isLoading);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading]);
 
-  if (isLoading) {
+  if (showLoader && isLoading) {
     // Show loading screen
     return (
       <div className="flex flex-col items-center justify-center h-[80vh]">
@@ -42,8 +56,28 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 function AdminRoute({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const { isAuthenticated, isAdmin, isLoading } = useAuth({ refreshInterval: 45 });
+  const [showLoader, setShowLoader] = useState(true);
+  
+  // Only show loading screen after a brief delay
+  useEffect(() => {
+    if (!isLoading) {
+      setShowLoader(false);
+    } else {
+      // Add slight delay before showing loader to prevent flicker on fast auth checks
+      const timer = setTimeout(() => {
+        setShowLoader(isLoading);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading]);
 
-  if (isLoading) {
+  // Preload optimization - if isAdmin is already known to be true (from cache), 
+  // we can start rendering the children immediately without waiting for the check
+  if (isAdmin && isAuthenticated && !isLoading) {
+    return <>{children}</>;
+  }
+
+  if (showLoader && isLoading) {
     // Show loading screen
     return (
       <div className="flex flex-col items-center justify-center h-[80vh]">

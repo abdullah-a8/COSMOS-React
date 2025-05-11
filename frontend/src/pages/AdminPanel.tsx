@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCsrf } from '../hooks/useCsrf';
 import { motion } from 'framer-motion'; // Import motion for animations
@@ -17,8 +17,8 @@ interface InviteCode {
 }
 
 interface NewInviteCode {
-  email?: string;
-  expires_days?: number;
+  email: string;
+  expires_days: number;
   max_redemptions: number;
 }
 
@@ -31,6 +31,15 @@ interface CreateResponse {
   is_active: boolean;
   redemption_count: number;
   max_redemptions: number;
+}
+
+// Cache configuration
+const DATA_CACHE_VALIDITY = 60 * 1000; // 1 minute cache validity
+
+interface DataCache<T> {
+  data: T[];
+  timestamp: number;
+  filter: any; // Cache key based on filter criteria
 }
 
 export default function AdminPanel() {
@@ -46,17 +55,40 @@ export default function AdminPanel() {
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   
+  // Cache reference using useRef to persist between renders without causing re-renders
+  const dataCache = useRef<DataCache<InviteCode> | null>(null);
+  
   const navigate = useNavigate();
   const { fetchWithCsrf } = useCsrf();
   const { isMobile } = useDevice();
 
-  // Load invite codes when component mounts
-  useEffect(() => {
-    fetchInviteCodes();
+  // Check if cache is valid
+  const isCacheValid = useCallback(() => {
+    if (!dataCache.current) return false;
+    
+    // Check timestamp validity
+    const isTimestampValid = Date.now() - dataCache.current.timestamp < DATA_CACHE_VALIDITY;
+    
+    // Check if filter criteria matches
+    const isFilterMatching = dataCache.current.filter === showActiveOnly;
+    
+    return isTimestampValid && isFilterMatching;
   }, [showActiveOnly]);
 
-  const fetchInviteCodes = async () => {
-    setIsLoading(true);
+  // Load invite codes when component mounts or filter changes
+  const fetchInviteCodes = useCallback(async (forceRefresh = false) => {
+    // Use cache if available and not forced refresh
+    if (!forceRefresh && isCacheValid()) {
+      setInviteCodes(dataCache.current!.data);
+      setIsLoading(false);
+      return;
+    }
+    
+    // Only show loading indicator on initial load or forced refresh
+    if (inviteCodes.length === 0 || forceRefresh) {
+      setIsLoading(true);
+    }
+    
     setError(null);
     try {
       const response = await fetch(`/api/v1/admin/invite-codes?active_only=${showActiveOnly}`);
@@ -73,13 +105,25 @@ export default function AdminPanel() {
       
       const data = await response.json();
       setInviteCodes(data);
+      
+      // Update cache
+      dataCache.current = {
+        data,
+        timestamp: Date.now(),
+        filter: showActiveOnly
+      };
     } catch (err) {
       setError('Error loading invite codes. Please try again.');
       console.error('Error fetching invite codes:', err);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [showActiveOnly, navigate, inviteCodes.length, isCacheValid]);
+
+  // Effect for initial load and filter changes
+  useEffect(() => {
+    fetchInviteCodes(true);
+  }, [fetchInviteCodes, showActiveOnly]);
 
   const createInviteCode = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,8 +146,8 @@ export default function AdminPanel() {
       const data: CreateResponse = await response.json();
       setGeneratedCode(data.code);
       
-      // Refresh the list
-      fetchInviteCodes();
+      // Refresh the list with force refresh to bypass cache
+      fetchInviteCodes(true);
       
       // Reset form
       setNewCode({
@@ -135,8 +179,8 @@ export default function AdminPanel() {
         throw new Error('Failed to deactivate invite code');
       }
       
-      // Refresh the list
-      fetchInviteCodes();
+      // Refresh the list with force refresh to bypass cache
+      fetchInviteCodes(true);
     } catch (err) {
       setError('Error deactivating invite code. Please try again.');
       console.error('Error deactivating invite code:', err);
@@ -270,7 +314,6 @@ export default function AdminPanel() {
           </div>
         </form>
         
-        {/* Display newly generated code */}
         {generatedCode && (
           <motion.div 
             initial={{ opacity: 0, y: 10 }}
