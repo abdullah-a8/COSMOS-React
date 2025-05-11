@@ -42,6 +42,9 @@ interface DataCache<T> {
   filter: any; // Cache key based on filter criteria
 }
 
+// Email validation regex - balances validation strictness with practical use
+const EMAIL_REGEX = /^(?!\.)(?!.*\.\.)([a-z0-9_'+\-\.]*)[a-z0-9_'+\-]@([a-z0-9][a-z0-9\-]*\.)+[a-z]{2,}$/i;
+
 export default function AdminPanel() {
   const [inviteCodes, setInviteCodes] = useState<InviteCode[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -54,6 +57,7 @@ export default function AdminPanel() {
   });
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
   
   // Cache reference using useRef to persist between renders without causing re-renders
   const dataCache = useRef<DataCache<InviteCode> | null>(null);
@@ -61,6 +65,24 @@ export default function AdminPanel() {
   const navigate = useNavigate();
   const { fetchWithCsrf } = useCsrf();
   const { isMobile } = useDevice();
+
+  // Email validation function
+  const validateEmail = (email: string) => {
+    if (!email) return true; // Email is optional, so empty is valid
+    return EMAIL_REGEX.test(email);
+  };
+
+  // Handle email input change with validation
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const email = e.target.value;
+    setNewCode({...newCode, email});
+    
+    if (email && !validateEmail(email)) {
+      setEmailError('Please enter a valid email address');
+    } else {
+      setEmailError(null);
+    }
+  };
 
   // Check if cache is valid
   const isCacheValid = useCallback(() => {
@@ -122,13 +144,21 @@ export default function AdminPanel() {
 
   // Effect for initial load and filter changes
   useEffect(() => {
-    fetchInviteCodes(true);
+    fetchInviteCodes(false);
   }, [fetchInviteCodes, showActiveOnly]);
 
   const createInviteCode = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate email before submission if it's not empty
+    if (newCode.email && !validateEmail(newCode.email)) {
+      setEmailError('Please enter a valid email address');
+      return;
+    }
+    
     setIsGenerating(true);
     setError(null);
+    setEmailError(null);
     setGeneratedCode(null);
     
     try {
@@ -254,10 +284,13 @@ export default function AdminPanel() {
                 type="email"
                 id="email"
                 value={newCode.email || ''}
-                onChange={(e) => setNewCode({...newCode, email: e.target.value})}
+                onChange={handleEmailChange}
                 placeholder="user@example.com"
-                className="w-full px-3 py-2 bg-black/30 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                className={`w-full px-3 py-2 bg-black/30 border ${emailError ? 'border-red-500' : 'border-white/20'} rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-1 ${emailError ? 'focus:ring-red-500 focus:border-red-500' : 'focus:ring-purple-500 focus:border-purple-500'} transition-colors`}
               />
+              {emailError && (
+                <p className="text-xs text-red-400 mt-1">{emailError}</p>
+              )}
             </div>
             
             <div>
@@ -296,7 +329,7 @@ export default function AdminPanel() {
           <div className="flex items-center justify-end space-x-3">
             <button
               type="submit"
-              disabled={isGenerating}
+              disabled={isGenerating || !!emailError}
               className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-medium rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_15px_rgba(147,51,234,0.3)] hover:shadow-[0_0_20px_rgba(147,51,234,0.4)]"
             >
               {isGenerating ? (
