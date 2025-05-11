@@ -45,13 +45,17 @@ if settings.CORS_ORIGINS and "*" in settings.CORS_ORIGINS:
     logger.warning("CORS configured to allow all origins. This should only be used in development.")
     allow_all = True
 
-# Add CORS middleware
+# Define default development origins if using wildcard
+dev_origins = ["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173"]
+
+# Add CORS middleware with proper configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"] if allow_all else settings.CORS_ORIGINS,
-    allow_credentials=not allow_all,  # Must be False if allow_origins=["*"]
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=dev_origins if allow_all else settings.CORS_ORIGINS,
+    allow_credentials=True,  # Always enable credentials
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "X-CSRF-Token"],
+    expose_headers=["Content-Type", "X-CSRF-Token"],
 )
 
 # Add CSRF Protection middleware

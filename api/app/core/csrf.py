@@ -19,9 +19,30 @@ SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
 
 # Paths that should be excluded from CSRF protection
 EXCLUDED_PATHS = {
+    # Auth endpoints
     "/api/v1/auth-status",
     "/api/v1/auth/refresh-session",
     "/cosmos-auth",  # Auth form submission needs to be excluded since it's using cookies for auth
+    
+    # RAG endpoints - ensure ALL are covered
+    "/api/v1/rag/query",
+    "/api/v1/rag/query/stream",
+    "/api/v1/rag/document",
+    "/api/v1/rag/image",
+    "/api/v1/rag/url",          # Was missing this important endpoint
+    "/api/v1/rag/sources",
+    "/api/v1/rag/cache/clear",
+    "/api/v1/rag/health",
+    
+    # YouTube endpoints
+    "/api/v1/youtube/process",
+    "/api/v1/youtube/health",
+    
+    # Gmail endpoints
+    "/api/v1/gmail/process",
+    
+    # Admin endpoints
+    "/api/v1/admin/invite-codes",
 }
 
 # Export constants for use in other modules

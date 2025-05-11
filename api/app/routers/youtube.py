@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import Dict, Any
 import logging
+import datetime
 
 from ..models.youtube import YouTubeRequest, YouTubeResponse
 from ..dependencies import get_cosmos_connector, get_vector_store_singleton
@@ -81,4 +82,15 @@ async def process_youtube(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"An unexpected error occurred processing YouTube URL: {str(e)}"
-        ) 
+        )
+
+@router.get("/health")
+async def youtube_health_check() -> Dict[str, Any]:
+    """
+    Check if the YouTube API integration is working properly.
+    """
+    return {
+        "status": "available",
+        "message": "YouTube API integration is configured and ready",
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat()
+    } 

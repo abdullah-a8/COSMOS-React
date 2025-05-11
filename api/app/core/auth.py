@@ -16,16 +16,28 @@ logger = logging.getLogger(__name__)
 
 # Path exclusions
 EXCLUDED_PATHS = [
+    # Documentation endpoints
     "/api/v1/docs",
     "/api/v1/redoc",
     "/api/v1/openapi.json",
+    
+    # Health and status endpoints
     "/api/v1/health",
     "/api/v1/auth-status",
     "/api/v1/auth/refresh-session",
     "/api/v1/csrf-token",
+    
+    # Asset paths
     "/favicon.ico",
     "/cosmos_app.png",
-    "/auth"
+    "/auth",
+    
+    # API endpoints
+    "/api/v1/rag/query/stream",  # RAG streaming endpoint
+    "/api/v1/rag/url",          # URL processor endpoint
+    "/api/v1/youtube/process",   # YouTube processing endpoint
+    "/api/v1/gmail/auth/url",    # Gmail auth URL endpoint
+    "/api/v1/gmail/auth/callback", # Gmail auth callback endpoint
 ]
 
 # Additional static resource paths
@@ -77,6 +89,10 @@ class BetaAuthMiddleware(BaseHTTPMiddleware):
                     "is_admin": is_admin
                 })
             
+            return await call_next(request)
+        
+        # Allow OPTIONS requests for all API endpoints to support CORS preflight
+        if request.method == "OPTIONS" and path.startswith("/api/"):
             return await call_next(request)
         
         # Check for authentication

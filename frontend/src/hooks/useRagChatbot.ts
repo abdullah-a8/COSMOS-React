@@ -193,6 +193,7 @@ export function useRagChatbot(chunkSize: number, chunkOverlap: number) {
 
       const response = await fetch(`${API_BASE}/rag/document`, {
         method: 'POST',
+        credentials: 'include',
         body: formData,
       });
 
@@ -238,6 +239,7 @@ export function useRagChatbot(chunkSize: number, chunkOverlap: number) {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           url,
           chunk_size: chunkSize,
@@ -289,6 +291,7 @@ export function useRagChatbot(chunkSize: number, chunkOverlap: number) {
 
       const response = await fetch(`${API_BASE}/rag/image`, {
         method: 'POST',
+        credentials: 'include',
         body: formData,
       });
 
@@ -349,6 +352,7 @@ export function useRagChatbot(chunkSize: number, chunkOverlap: number) {
             headers: {
               'Content-Type': 'application/json',
             },
+            credentials: 'include',
             body: JSON.stringify({
               query: content,
               model_name: model,
@@ -459,6 +463,7 @@ export function useRagChatbot(chunkSize: number, chunkOverlap: number) {
               headers: {
                 'Content-Type': 'application/json',
               },
+              credentials: 'include',
               body: JSON.stringify({
                 query: content,
                 model_name: model,

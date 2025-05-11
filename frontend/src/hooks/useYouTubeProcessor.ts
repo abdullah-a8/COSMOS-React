@@ -65,6 +65,7 @@ export function useYouTubeProcessor({ chunkSize, chunkOverlap }: UseYouTubeProce
           "Content-Type": "application/json",
           "Accept": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify({
           url: videoUrl,
           chunk_size: chunkSize,

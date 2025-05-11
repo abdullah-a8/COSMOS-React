@@ -156,10 +156,6 @@ def get_invite_code_email_html(invite_code, email, max_redemptions, expires_at, 
                 </p>
                 
                 <p style="margin: 0 0 12px; color: #4b5563;">
-                    <span style="font-weight: 600; color: #374151;">Uses Remaining:</span> {uses_left}
-                </p>
-                
-                <p style="margin: 0 0 12px; color: #4b5563;">
                     <span style="font-weight: 600; color: #374151;">Expiry:</span> {formatted_expiry if expires_at else "Never expires"}
                 </p>
                 
