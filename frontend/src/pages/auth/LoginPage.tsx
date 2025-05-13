@@ -3,6 +3,7 @@ import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { SparklesCore } from '../../components/sparkles';
 import LoginForm from '../../components/auth/LoginForm';
 import { useDevice } from '../../hooks/useDevice';
+import { useAuth } from '../../hooks/useAuth';
 
 // Logout key constant should match the one in useAuth
 const LOGOUT_KEY = "cosmos_logout_in_progress";
@@ -16,6 +17,7 @@ const LoginPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isFadingOut, setIsFadingOut] = useState<boolean>(false);
+  const { isAuthenticated } = useAuth();
   
   // Always clear auth state on login page load
   useEffect(() => {
@@ -129,29 +131,18 @@ const LoginPage: React.FC = () => {
     }
   };
   
-  // Check if already authenticated - but skip if logout was just performed
+  // Check if already authenticated - use the hook value directly
   useEffect(() => {
-    const checkAuthStatus = async () => {
-      // Don't check auth status immediately after logout
-      if (searchParams.get('logout') === 'true') {
-        return;
-      }
-      
-      try {
-        const response = await fetch('/api/v1/auth-status');
-        const data = await response.json();
-        
-        // If already authenticated, redirect to home
-        if (data.authenticated) {
-          navigate('/');
-        }
-      } catch (err) {
-        // Silently fail - user will stay on login page
-      }
-    };
+    // Don't check auth status immediately after logout
+    if (searchParams.get('logout') === 'true') {
+      return;
+    }
     
-    checkAuthStatus();
-  }, [navigate, searchParams]);
+    // If already authenticated, redirect to home
+    if (isAuthenticated) {
+      navigate('/');
+    }
+  }, [navigate, searchParams, isAuthenticated]);
   
   const handleSuccess = () => {
     setError(null);

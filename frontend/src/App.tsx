@@ -110,7 +110,8 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
 function App() {
   const { isMobile } = useDevice();
   const location = useLocation();
-  const isAuthPage = ['/auth', '/login', '/register', '/profile'].includes(location.pathname);
+  const { isAuthenticated } = useAuth({ refreshInterval: 45 });
+  const isAuthPage = ['/auth', '/login', '/register'].includes(location.pathname);
   
   // Set proper viewport meta tag for mobile devices
   useEffect(() => {
@@ -158,22 +159,22 @@ function App() {
       </div>
 
       <div className="relative z-10 min-h-screen flex flex-col overflow-x-hidden">
-        {/* Only show navbar if not on auth page */}
-        {!isAuthPage && <Navbar />}
+        {/* Only show navbar if not on auth page and authenticated */}
+        {!isAuthPage && isAuthenticated && <Navbar />}
         
         <div className="flex-1 flex flex-col">
           <Routes>
-            {/* Authentication routes */}
+            {/* Authentication routes - must always be accessible */}
             <Route path="/auth" element={<AuthScreen />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            
+            {/* Protected routes */}
             <Route path="/profile" element={
               <ProtectedRoute>
                 <ProfilePage />
               </ProtectedRoute>
             } />
-            
-            {/* Application routes */}
             <Route path="/" element={
               <ProtectedRoute>
                 <Home />
@@ -199,18 +200,23 @@ function App() {
                 <AdminPanel />
               </AdminRoute>
             } />
+            
+            {/* Redirect non-authenticated users to login for unknown routes */}
+            <Route path="*" element={
+              isAuthenticated ? <Navigate to="/" replace /> : <Navigate to="/login" replace />
+            } />
           </Routes>
         </div>
 
-        {/* Animated robot - Only shown on non-auth pages and non-mobile devices */}
-        {!isAuthPage && !isMobile && (
+        {/* Animated robot - Only shown on non-auth pages and non-mobile devices when authenticated */}
+        {!isAuthPage && !isMobile && isAuthenticated && (
           <div className="fixed bottom-4 right-4 w-64 h-64 z-10 pointer-events-none">
             <RoboAnimation />
           </div>
         )}
         
-        {/* Mobile footer - only on non-auth pages */}
-        {!isAuthPage && isMobile && (
+        {/* Mobile footer - only on non-auth pages when authenticated */}
+        {!isAuthPage && isMobile && isAuthenticated && (
           <footer className="mt-auto py-4 px-4 text-center text-gray-500 text-xs">
             <p>© 2025 COSMOS AI. All rights reserved.</p>
           </footer>

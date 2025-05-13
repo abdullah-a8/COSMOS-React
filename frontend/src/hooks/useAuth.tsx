@@ -62,12 +62,29 @@ export function useAuth({ refreshInterval = 45 }: UseAuthOptions = {}) {
         return authCache.isAuthenticated;
       }
       
-      // Only set loading if we're actually making a network request
-      if (!authCache || forceRefresh) {
+      // Perform an immediate check if isAuthenticated is null
+      // This ensures faster initial auth state resolution
+      if (isAuthenticated === null) {
+        setIsLoading(true);
+      } else if (!authCache || forceRefresh) {
+        // Only set loading if we're actually making a network request
         setIsLoading(true);
       }
       
-      const response = await fetch('/api/v1/auth-status');
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+      
+      const response = await fetch('/api/v1/auth-status', {
+        signal: controller.signal,
+        credentials: 'include',
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        }
+      });
+      
+      clearTimeout(timeoutId);
       
       if (!response.ok) {
         console.error('Auth status check failed:', response.status, response.statusText);

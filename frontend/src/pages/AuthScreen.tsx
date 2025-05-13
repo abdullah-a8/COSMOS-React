@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { SparklesCore } from '../components/sparkles';
 import { useDevice } from '../hooks/useDevice';
 import { useCsrf } from '../hooks/useCsrf';
-import { useSearchParams, useLocation } from 'react-router-dom';
+import { useSearchParams, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
 
 export default function AuthScreen() {
   const [error, setError] = useState<string | null>(null);
@@ -10,7 +11,9 @@ export default function AuthScreen() {
   const { isMobile } = useDevice();
   const [searchParams] = useSearchParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const { csrfToken } = useCsrf();
+  const { isAuthenticated } = useAuth({ refreshInterval: 0 });
   
   // Check for error parameter in URL
   useEffect(() => {
@@ -32,25 +35,13 @@ export default function AuthScreen() {
     }
   }, [searchParams]);
   
-  // Check if already authenticated
+  // Check if already authenticated - use a non-redirecting check
   useEffect(() => {
-    const checkAuthStatus = async () => {
-      try {
-        const response = await fetch('/api/v1/auth-status');
-        const data = await response.json();
-        
-        // If already authenticated, redirect to home or original location
-        if (data.authenticated) {
-          const returnPath = location.state?.from?.pathname || '/';
-          window.location.href = returnPath;
-        }
-      } catch (err) {
-        // Silently fail - user will stay on auth page
-      }
-    };
-    
-    checkAuthStatus();
-  }, [location]);
+    if (isAuthenticated) {
+      const returnPath = location.state?.from?.pathname || '/';
+      navigate(returnPath, { replace: true });
+    }
+  }, [isAuthenticated, location.state, navigate]);
   
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
