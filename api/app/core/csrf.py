@@ -23,6 +23,14 @@ EXCLUDED_PATHS = {
     "/api/v1/auth-status",
     "/api/v1/auth/refresh-session",
     "/cosmos-auth",  # Auth form submission needs to be excluded since it's using cookies for auth
+    "/api/v1/users/register",  # Allow registration without CSRF token
+    "/api/v1/users/login",     # Allow login without CSRF token
+    "/api/v1/users/logout",    # Allow logout without CSRF token
+    "/api/v1/csrf-token",      # CSRF token endpoint itself should be excluded
+    
+    # Additional auth endpoints for complete coverage
+    "/api/v1/users/me",        # User profile info should work without CSRF
+    "/api/v1/users/invite",    # Invite code creation
     
     # RAG endpoints - ensure ALL are covered
     "/api/v1/rag/query",
@@ -41,8 +49,6 @@ EXCLUDED_PATHS = {
     # Gmail endpoints
     "/api/v1/gmail/process",
     
-    # Admin endpoints
-    "/api/v1/admin/invite-codes",
 }
 
 # Export constants for use in other modules
@@ -52,8 +58,12 @@ class CSRFProtectionMiddleware(BaseHTTPMiddleware):
     """Middleware for CSRF protection"""
     
     async def dispatch(self, request: Request, call_next):
+        # Always log the path for debugging
+        logger.debug(f"Processing request to path: {request.url.path}")
+        
         # Skip CSRF for excluded paths and safe methods
         if request.method in SAFE_METHODS or request.url.path in EXCLUDED_PATHS:
+            logger.debug(f"Skipping CSRF validation for {request.method} {request.url.path}")
             response = await call_next(request)
             
             # If it's a safe method, ensure the CSRF token exists in the response
@@ -61,6 +71,11 @@ class CSRFProtectionMiddleware(BaseHTTPMiddleware):
                 response = self._ensure_csrf_cookie(request, response)
                 
             return response
+        
+        # Special case for logout endpoint - always allow to prevent authentication issues
+        if request.url.path == "/api/v1/users/logout":
+            logger.info("Allowing logout request without CSRF validation")
+            return await call_next(request)
         
         # For unsafe methods, validate the CSRF token
         valid = await self._validate_csrf(request)

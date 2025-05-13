@@ -222,6 +222,20 @@ export default function AdminPanel() {
       return;
     }
     
+    // Validate max_redemptions
+    if (newCode.max_redemptions <= 0) {
+      setError('Maximum redemptions must be greater than zero');
+      storeSetError('Maximum redemptions must be greater than zero');
+      return;
+    }
+    
+    // Validate expires_days if provided
+    if (newCode.expires_days !== null && newCode.expires_days < 0) {
+      setError('Expiration days must be a positive number or zero');
+      storeSetError('Expiration days must be a positive number or zero');
+      return;
+    }
+    
     setIsGenerating(true);
     setError(null);
     storeSetError(null);
@@ -237,7 +251,16 @@ export default function AdminPanel() {
       });
       
       if (!response.ok) {
-        throw new Error('Failed to create invite code');
+        // Try to get detailed error message from response
+        let errorMessage = 'Error creating invite code. Please try again.';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.detail || errorMessage;
+        } catch (parseError) {
+          console.error('Error parsing error response:', parseError);
+        }
+        
+        throw new Error(errorMessage);
       }
       
       const data: CreateResponse = await response.json();
@@ -253,7 +276,8 @@ export default function AdminPanel() {
         max_redemptions: 1
       });
     } catch (err) {
-      const errorMsg = 'Error creating invite code. Please try again.';
+      // Get error message from the Error object or use a default
+      const errorMsg = err instanceof Error ? err.message : 'Error creating invite code. Please try again.';
       setError(errorMsg);
       storeSetError(errorMsg);
       console.error('Error creating invite code:', err);

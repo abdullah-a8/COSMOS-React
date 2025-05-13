@@ -32,6 +32,10 @@ EXCLUDED_PATHS = [
     "/cosmos_app.png",
     "/auth",
     
+    # Auth endpoints
+    "/api/v1/users/register",  # Allow user registration without authentication
+    "/api/v1/users/login",     # Allow user login without authentication
+    
     # API endpoints
     "/api/v1/rag/query/stream",  # RAG streaming endpoint
     "/api/v1/rag/url",          # URL processor endpoint

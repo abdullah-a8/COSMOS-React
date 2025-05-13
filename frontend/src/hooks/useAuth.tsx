@@ -16,6 +16,11 @@ interface AuthCache {
 // Enable verbose debugging
 const DEBUG = false;
 
+// Add logout detection
+const LOGOUT_KEY = "cosmos_logout_in_progress";
+// Add API prevention flag to stop API calls during logout
+const PREVENT_API_REQUESTS_KEY = "cosmos_prevent_api_requests";
+
 export function useAuth({ refreshInterval = 45 }: UseAuthOptions = {}) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
@@ -28,6 +33,17 @@ export function useAuth({ refreshInterval = 45 }: UseAuthOptions = {}) {
   const checkAuthStatus = useCallback(async (forceRefresh = false) => {
     try {
       if (DEBUG) console.log('Checking auth status...');
+      
+      // Check if logout is in progress or API requests are prevented
+      if (sessionStorage.getItem(LOGOUT_KEY) === 'true' || 
+          sessionStorage.getItem(PREVENT_API_REQUESTS_KEY) === 'true') {
+        if (DEBUG) console.log('Logout in progress or API requests prevented, returning unauthenticated');
+        setIsAuthenticated(false);
+        setIsAdmin(false);
+        setAuthCache(null);
+        setIsLoading(false);
+        return false;
+      }
       
       // Check cache first if not forcing refresh
       if (!forceRefresh && authCache && (Date.now() - authCache.timestamp < AUTH_CACHE_VALIDITY)) {
@@ -89,15 +105,74 @@ export function useAuth({ refreshInterval = 45 }: UseAuthOptions = {}) {
     } catch (err) {
       console.error('Error checking authentication status:', err);
       setError('Failed to verify authentication status');
+      setIsAuthenticated(false);
+      setIsAdmin(false);
+      setAuthCache(null);
       return false;
     } finally {
       setIsLoading(false);
     }
   }, [authCache, isAuthenticated, isAdmin]);
 
+  // Add logout function
+  const logout = useCallback(async () => {
+    try {
+      // Set logout flag to prevent further auth calls
+      sessionStorage.setItem(LOGOUT_KEY, 'true');
+      // Also set the API prevention flag
+      sessionStorage.setItem(PREVENT_API_REQUESTS_KEY, 'true');
+      
+      // Clear auth state immediately
+      setIsAuthenticated(false);
+      setIsAdmin(false);
+      setAuthCache(null);
+      
+      // Make API call to server
+      await fetch('/api/v1/users/logout', {
+        method: 'POST',
+        credentials: 'include',
+        cache: 'no-store',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        },
+        signal: AbortSignal.timeout(3000)
+      });
+      
+      // Clear client storage
+      sessionStorage.clear();
+      localStorage.clear();
+      
+      // Clear cookies
+      document.cookie.split(';').forEach(cookie => {
+        const [name] = cookie.trim().split('=');
+        if (name) {
+          document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`;
+          document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/api;`;
+          document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/api/v1;`;
+        }
+      });
+      
+      return true;
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Even on error, clear client state
+      sessionStorage.clear();
+      localStorage.clear();
+      return false;
+    }
+  }, []);
+
   // Function to refresh the session
   const refreshSession = useCallback(async (): Promise<boolean> => {
     try {
+      // Don't refresh if logout is in progress
+      if (sessionStorage.getItem(LOGOUT_KEY) === 'true') {
+        return false;
+      }
+      
       if (DEBUG) console.log('Refreshing session...');
       
       const response = await fetch('/api/v1/auth/refresh-session', {
@@ -147,6 +222,16 @@ export function useAuth({ refreshInterval = 45 }: UseAuthOptions = {}) {
     }
   }, []);
 
+  // Clear logout flag if it exists on mount
+  useEffect(() => {
+    if (sessionStorage.getItem(LOGOUT_KEY) === 'true') {
+      sessionStorage.removeItem(LOGOUT_KEY);
+    }
+    if (sessionStorage.getItem(PREVENT_API_REQUESTS_KEY) === 'true') {
+      sessionStorage.removeItem(PREVENT_API_REQUESTS_KEY);
+    }
+  }, []);
+
   // Check authentication on mount
   useEffect(() => {
     checkAuthStatus();
@@ -158,13 +243,19 @@ export function useAuth({ refreshInterval = 45 }: UseAuthOptions = {}) {
     
     const intervalId = setInterval(() => {
       // Only try to refresh if we believe the user is currently authenticated
-      if (isAuthenticated) {
+      // and not logging out
+      if (isAuthenticated && sessionStorage.getItem(LOGOUT_KEY) !== 'true') {
         refreshSession();
       }
     }, refreshInterval * 60 * 1000); // Convert minutes to milliseconds
     
     return () => clearInterval(intervalId);
   }, [refreshInterval, refreshSession, isAuthenticated]);
+
+  // Add a utility to check if API requests should be prevented
+  const shouldPreventAPIRequests = useCallback(() => {
+    return sessionStorage.getItem(PREVENT_API_REQUESTS_KEY) === 'true';
+  }, []);
 
   return {
     isAuthenticated,
@@ -173,6 +264,8 @@ export function useAuth({ refreshInterval = 45 }: UseAuthOptions = {}) {
     error,
     checkAuthStatus,
     refreshSession,
+    logout,
+    shouldPreventAPIRequests,
     debug: {
       adminStatus: isAdmin,
       authStatus: isAuthenticated,

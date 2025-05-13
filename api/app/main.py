@@ -14,7 +14,7 @@ from .core.config import settings
 from .core.auth import BetaAuthMiddleware
 from .core.db_middleware import DatabaseSessionMiddleware
 from .core.csrf import CSRFProtectionMiddleware
-from .routers import rag, youtube, gmail, admin
+from .routers import rag, youtube, gmail, admin, users
 from .dependencies import get_vector_store_singleton, get_embeddings_singleton
 from .db.session import init_models, engine
 from .workers.cleanup import run_cleanup
@@ -119,6 +119,7 @@ app.include_router(
     prefix=f"{settings.API_V1_STR}/admin",
     tags=["admin"]
 )
+app.include_router(users.router, prefix="/api/v1/users", tags=["users"])
 
 # Add a route to handle the login form submission
 @app.post("/cosmos-auth")
@@ -244,47 +245,64 @@ async def auth_status(request: Request):
     """Check authentication status"""
     from .core.auth_service import validate_session, is_admin_session, SESSION_TOKEN_NAME
     
-    db = request.state.db
-    session_token = request.cookies.get(SESSION_TOKEN_NAME)
-    
-    # Log both the check and the result for debugging
-    session_id_prefix = session_token[:8] if session_token else "none"
-    logger.info(f"Auth status check - Session: {session_id_prefix}...")
-    
-    is_authenticated = await validate_session(db, session_token)
-    is_admin = False
-    
-    if is_authenticated:
-        is_admin = await is_admin_session(db, session_token)
-        logger.info(f"Auth status check - User is authenticated, admin status: {is_admin}")
-    else:
-        logger.info(f"Auth status check - User is not authenticated")
-    
-    # Include admin email configuration in debug mode
-    admin_emails = getattr(settings, "ADMIN_EMAILS", "")
-    admin_emails_list = []
-    if isinstance(admin_emails, list):
-        admin_emails_list = admin_emails
-    elif isinstance(admin_emails, str) and admin_emails:
-        admin_emails_list = [email.strip() for email in admin_emails.split(",") if email.strip()]
+    try:
+        db = request.state.db
+        session_token = request.cookies.get(SESSION_TOKEN_NAME)
         
-    if settings.DEBUG:
-        logger.debug(f"Configured admin emails: {admin_emails_list}")
-    
-    # IMPORTANT: Always include is_admin in the response, regardless of authentication status
-    response = {
-        "authenticated": is_authenticated,
-        "is_admin": is_admin
-    }
-    
-    if settings.DEBUG:
-        response["beta_enabled"] = getattr(settings, "BETA_ENABLED", True)
-        response["debug_info"] = {
-            "admin_emails_configured": bool(admin_emails_list),
-            "admin_email_count": len(admin_emails_list) if admin_emails_list else 0
+        # Make the endpoint robust against missing session tokens
+        if not session_token:
+            return {
+                "authenticated": False,
+                "is_admin": False,
+                "message": "No session token provided"
+            }
+            
+        # Log both the check and the result for debugging
+        session_id_prefix = session_token[:8] if session_token else "none"
+        logger.info(f"Auth status check - Session: {session_id_prefix}...")
+        
+        is_authenticated = await validate_session(db, session_token)
+        is_admin = False
+        
+        if is_authenticated:
+            is_admin = await is_admin_session(db, session_token)
+            logger.info(f"Auth status check - User is authenticated, admin status: {is_admin}")
+        else:
+            logger.info(f"Auth status check - User is not authenticated")
+        
+        # Include admin email configuration in debug mode
+        admin_emails = getattr(settings, "ADMIN_EMAILS", "")
+        admin_emails_list = []
+        if isinstance(admin_emails, list):
+            admin_emails_list = admin_emails
+        elif isinstance(admin_emails, str) and admin_emails:
+            admin_emails_list = [email.strip() for email in admin_emails.split(",") if email.strip()]
+            
+        if settings.DEBUG:
+            logger.debug(f"Configured admin emails: {admin_emails_list}")
+        
+        # IMPORTANT: Always include is_admin in the response, regardless of authentication status
+        response = {
+            "authenticated": is_authenticated,
+            "is_admin": is_admin
         }
-    
-    return response
+        
+        if settings.DEBUG:
+            response["beta_enabled"] = getattr(settings, "BETA_ENABLED", True)
+            response["debug_info"] = {
+                "admin_emails_configured": bool(admin_emails_list),
+                "admin_email_count": len(admin_emails_list) if admin_emails_list else 0
+            }
+        
+        return response
+    except Exception as e:
+        # Fail gracefully with a proper response even if there's an error
+        logger.error(f"Error in auth-status endpoint: {str(e)}")
+        return {
+            "authenticated": False,
+            "is_admin": False,
+            "error": "Error checking authentication status"
+        }
 
 @app.post(f"{settings.API_V1_STR}/auth/refresh-session", tags=["auth"])
 async def refresh_session(request: Request):

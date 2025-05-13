@@ -47,6 +47,7 @@ export default function Navbar() {
             <NavLink to="/youtube-processor">YouTube Processor</NavLink>
             <NavLink to="/gmail-responder">Gmail Responder</NavLink>
             {isAdmin && <NavLink to="/admin">Admin</NavLink>}
+            <NavLink to="/profile">Profile</NavLink>
           </div>
         )}
 
@@ -154,6 +155,16 @@ export default function Navbar() {
                     Admin
                   </MobileNavLink>
                 )}
+                
+                <MobileNavLink 
+                  to="/profile" 
+                  onClick={() => setMobileMenuOpen(false)}
+                  icon={<div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 text-white"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
+                  </div>}
+                >
+                  Profile
+                </MobileNavLink>
               </div>
               
               <div className="mt-auto pt-8 pb-8">

@@ -89,51 +89,90 @@ async def create_invite_code(
     db: AsyncSession = Depends(get_db)
 ):
     """Create a new invite code"""
-    invite_obj, plain_code = InviteCode.generate(
-        email=data.email,
-        expires_days=data.expires_days,
-        max_redemptions=data.max_redemptions
-    )
-    
-    db.add(invite_obj)
-    await db.commit()
-    await db.refresh(invite_obj)
-    
-    # Send email if email address is provided
-    if data.email:
-        try:
-            from ..services.email_service import send_invite_code_email
-            from ..email_templates.invite_code_email import calculate_days_remaining, format_date
-            
-            # Calculate values for the template
-            days_remaining = calculate_days_remaining(invite_obj.expires_at)
-            formatted_expiry = format_date(invite_obj.expires_at)
-
-            # Send the email using Resend SDK
-            await send_invite_code_email(
-                to_email=data.email,
-                invite_code=plain_code,
-                max_redemptions=invite_obj.max_redemptions,
-                expires_at=invite_obj.expires_at,
-                redemption_count=invite_obj.redemption_count
+    try:
+        # Validate expiration days - make sure it's None or a positive number
+        if data.expires_days is not None and data.expires_days < 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Expiration days must be a positive number or null for no expiration"
             )
             
-            logger.info(f"Invite code email sent to {data.email}")
-        except Exception as e:
-            logger.error(f"Failed to send invite code email: {str(e)}")
-            # Continue even if email sending fails
-    
-    # Return the plain code in the response - this is the only time it's available
-    return {
-        "id": invite_obj.id,
-        "code": plain_code,  # Plain code only returned at creation
-        "email": invite_obj.email,
-        "created_at": invite_obj.created_at,
-        "expires_at": invite_obj.expires_at,
-        "is_active": invite_obj.is_active,
-        "redemption_count": invite_obj.redemption_count,
-        "max_redemptions": invite_obj.max_redemptions
-    }
+        # Validate max_redemptions - must be positive
+        if data.max_redemptions <= 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Maximum redemptions must be a positive number"
+            )
+            
+        logger.info(f"Generating invite code with parameters: email={data.email}, expires_days={data.expires_days}, max_redemptions={data.max_redemptions}")
+        
+        invite_obj, plain_code = InviteCode.generate(
+            email=data.email,
+            expires_days=data.expires_days,
+            max_redemptions=data.max_redemptions
+        )
+        
+        logger.debug(f"Invite code object created, adding to database")
+        db.add(invite_obj)
+        
+        try:
+            await db.commit()
+            await db.refresh(invite_obj)
+            logger.info(f"Invite code successfully committed to database with ID: {invite_obj.id}")
+        except Exception as db_error:
+            logger.error(f"Database error while saving invite code: {str(db_error)}")
+            await db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Database error while creating invite code"
+            )
+        
+        # Send email if email address is provided
+        if data.email:
+            try:
+                from ..services.email_service import send_invite_code_email
+                from ..email_templates.invite_code_email import calculate_days_remaining, format_date
+                
+                # Calculate values for the template
+                days_remaining = calculate_days_remaining(invite_obj.expires_at)
+                formatted_expiry = format_date(invite_obj.expires_at)
+
+                # Send the email using Resend SDK
+                await send_invite_code_email(
+                    to_email=data.email,
+                    invite_code=plain_code,
+                    max_redemptions=invite_obj.max_redemptions,
+                    expires_at=invite_obj.expires_at,
+                    redemption_count=invite_obj.redemption_count
+                )
+                
+                logger.info(f"Invite code email sent to {data.email}")
+            except Exception as e:
+                logger.error(f"Failed to send invite code email: {str(e)}")
+                # Continue even if email sending fails
+        
+        # Return the plain code in the response - this is the only time it's available
+        return {
+            "id": invite_obj.id,
+            "code": plain_code,  # Plain code only returned at creation
+            "email": invite_obj.email,
+            "created_at": invite_obj.created_at,
+            "expires_at": invite_obj.expires_at,
+            "is_active": invite_obj.is_active,
+            "redemption_count": invite_obj.redemption_count,
+            "max_redemptions": invite_obj.max_redemptions
+        }
+    except HTTPException:
+        # Re-raise HTTP exceptions as they're already properly formatted
+        raise
+    except Exception as e:
+        # Log the detailed error for server-side diagnosis
+        logger.exception(f"Unexpected error creating invite code: {str(e)}")
+        # Return a friendly error message to the client
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error creating invite code. Please try again."
+        )
 
 @router.get("/invite-codes", response_model=List[InviteCodeListResponse])
 async def list_invite_codes(

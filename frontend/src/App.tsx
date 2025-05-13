@@ -7,6 +7,9 @@ import YouTubeProcessor from './pages/YouTubeProcessor';
 import GmailResponder from './pages/GmailResponder';
 import AuthScreen from './pages/AuthScreen';
 import AdminPanel from './pages/AdminPanel';
+import RegisterPage from './pages/auth/RegisterPage';
+import LoginPage from './pages/auth/LoginPage';
+import ProfilePage from './pages/auth/ProfilePage';
 import { RoboAnimation } from './components/robo-animation';
 import { useDevice } from './hooks/useDevice';
 import { useAuth } from './hooks/useAuth';
@@ -45,8 +48,8 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
   
   if (isAuthenticated === false) {
-    // Redirect to auth page with return path
-    return <Navigate to="/auth" state={{ from: location }} replace />;
+    // Redirect to login page with return path
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
   
   return <>{children}</>;
@@ -92,7 +95,7 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   
   // Handle unauthorized access
   if (isAuthenticated === false) {
-    return <Navigate to="/auth" state={{ from: location }} replace />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
   
   // Handle non-admin access - only redirect if we're certain user is not admin
@@ -107,7 +110,7 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
 function App() {
   const { isMobile } = useDevice();
   const location = useLocation();
-  const isAuthPage = location.pathname === '/auth';
+  const isAuthPage = ['/auth', '/login', '/register', '/profile'].includes(location.pathname);
   
   // Set proper viewport meta tag for mobile devices
   useEffect(() => {
@@ -126,7 +129,7 @@ function App() {
     );
   }, []);
 
-  // Prevent scrolling on auth page
+  // Prevent scrolling on auth pages
   useEffect(() => {
     if (isAuthPage) {
       document.body.style.overflow = 'hidden';
@@ -160,7 +163,17 @@ function App() {
         
         <div className="flex-1 flex flex-col">
           <Routes>
+            {/* Authentication routes */}
             <Route path="/auth" element={<AuthScreen />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
+            } />
+            
+            {/* Application routes */}
             <Route path="/" element={
               <ProtectedRoute>
                 <Home />
