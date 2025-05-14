@@ -56,6 +56,7 @@ export default function AuthScreen() {
     }
     
     try {
+      // Create a traditional form and submit it
       const form = document.createElement('form');
       form.method = 'POST';
       form.action = '/cosmos-auth';

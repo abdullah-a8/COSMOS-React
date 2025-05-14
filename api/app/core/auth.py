@@ -44,6 +44,8 @@ EXCLUDED_PATHS = [
     "/api/v1/gmail/auth/callback", # Gmail auth callback endpoint
 ]
 
+# Important: Do not exclude the cosmos-auth form handler
+
 # Additional static resource paths
 STATIC_PATH_PREFIXES = [
     "/assets/",
@@ -64,8 +66,30 @@ class BetaAuthMiddleware(BaseHTTPMiddleware):
     """Middleware for handling closed beta authentication"""
     
     async def dispatch(self, request: Request, call_next):
-        # Get database session
-        db = request.state.db
+        # Get database session - safely handle missing DB
+        try:
+            db = request.state.db
+        except AttributeError:
+            # If DB middleware hasn't run, handle gracefully
+            logger.error("Database session not available in auth middleware")
+            
+            # For auth-status endpoint, return unauthenticated response
+            if request.url.path == "/api/v1/auth-status":
+                return JSONResponse(content={
+                    "authenticated": False,
+                    "is_admin": False,
+                    "error": "Database connection unavailable"
+                })
+                
+            # For cosmos-auth endpoint, redirect to error page
+            if request.url.path == "/cosmos-auth" and request.method == "POST":
+                return RedirectResponse(
+                    url="/auth?error=system",
+                    status_code=status.HTTP_303_SEE_OTHER
+                )
+                
+            # For other requests, just pass them through
+            return await call_next(request)
         
         # Only apply auth if BETA_ENABLED is True
         if not getattr(settings, "BETA_ENABLED", True):

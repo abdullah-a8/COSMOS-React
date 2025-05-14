@@ -58,13 +58,16 @@ app.add_middleware(
     expose_headers=["Content-Type", "X-CSRF-Token"],
 )
 
-# Add CSRF Protection middleware
-app.add_middleware(CSRFProtectionMiddleware)
+# Middleware registration order (first registered is executed last)
+# Order: DatabaseMiddleware → CSRFMiddleware → AuthMiddleware
 
-# Add Beta Authentication middleware
+# Authentication middleware
 app.add_middleware(BetaAuthMiddleware)
 
-# Add Database middleware first to ensure session is available
+# CSRF Protection middleware
+app.add_middleware(CSRFProtectionMiddleware)
+
+# Database middleware (runs first)
 app.add_middleware(DatabaseSessionMiddleware)
 
 # Startup and shutdown events
@@ -124,9 +127,79 @@ app.include_router(users.router, prefix="/api/v1/users", tags=["users"])
 # Add a route to handle the login form submission
 @app.post("/cosmos-auth")
 async def handle_auth_form(request: Request):
-    """This route handles the login form submission"""
-    from fastapi.responses import PlainTextResponse
-    return PlainTextResponse("Authentication handled by middleware. If you see this message, something went wrong.", status_code=500)
+    """Direct form handler for authentication requests.
+    This should only be needed if the middleware fails to process the request."""
+    from fastapi.responses import RedirectResponse
+    
+    try:
+        # Get database session
+        try:
+            db = request.state.db
+        except AttributeError:
+            logger.error("Database session not available in auth handler")
+            return RedirectResponse(
+                url="/auth?error=system",
+                status_code=status.HTTP_303_SEE_OTHER
+            )
+        
+        # Extract form data
+        form_data = await request.form()
+        password = form_data.get("password")
+        
+        if not password:
+            return RedirectResponse(
+                url="/auth?error=empty",
+                status_code=status.HTTP_303_SEE_OTHER
+            )
+        
+        # Import necessary components
+        from .core.auth_service import (
+            validate_access_code, 
+            create_session,
+            SESSION_TOKEN_NAME
+        )
+        
+        # Validate the access code
+        is_valid, error_code = await validate_access_code(db, password)
+        
+        if not is_valid:
+            return RedirectResponse(
+                url=f"/auth?error={error_code}",
+                status_code=status.HTTP_303_SEE_OTHER
+            )
+        
+        # Create session (without admin privileges for security)
+        session_token = await create_session(
+            db, 
+            expires_minutes=getattr(settings, "BETA_SESSION_TIMEOUT", 60),
+            is_admin=False  # Default to non-admin for security
+        )
+        
+        # Redirect to home with session cookie
+        response = RedirectResponse(
+            url="/",
+            status_code=status.HTTP_303_SEE_OTHER
+        )
+        
+        # Set the session cookie
+        timeout = getattr(settings, "BETA_SESSION_TIMEOUT", 60*60)
+        response.set_cookie(
+            key=SESSION_TOKEN_NAME,
+            value=session_token,
+            max_age=timeout,
+            httponly=True,
+            samesite="lax",
+            secure=settings.ENVIRONMENT.lower() == "production"
+        )
+        
+        return response
+    
+    except Exception as e:
+        logger.error(f"Error in auth handler: {str(e)}")
+        return RedirectResponse(
+            url="/auth?error=system",
+            status_code=status.HTTP_303_SEE_OTHER
+        )
 
 # --- Serve React Frontend Static Files ---
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
