@@ -30,7 +30,7 @@ EXCLUDED_PATHS = [
     # Asset paths
     "/favicon.ico",
     "/cosmos_app.png",
-    "/auth",  # Add back /auth to excluded paths
+    "/auth", 
     
     # New auth endpoints
     "/login",

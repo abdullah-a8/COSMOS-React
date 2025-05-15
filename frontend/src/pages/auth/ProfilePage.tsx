@@ -4,7 +4,6 @@ import ProfileForm from '../../components/auth/ProfileForm';
 import { SparklesCore } from '../../components/sparkles';
 import { useDevice } from '../../hooks/useDevice';
 import { useAuth } from '../../hooks/useAuth';
-import Navbar from '../../components/navbar';
 
 const ProfilePage: React.FC = () => {
   const { isMobile } = useDevice();
@@ -111,9 +110,6 @@ const ProfilePage: React.FC = () => {
   
   return (
     <div className="min-h-screen bg-black/[0.96] antialiased overflow-hidden">
-      {/* Include the navbar component */}
-      <Navbar />
-      
       {/* Background effects */}
       <div className="fixed inset-0 z-0">
         <SparklesCore
