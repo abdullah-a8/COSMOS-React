@@ -136,13 +136,14 @@ async def login_user(
         content={"status": "success", "message": "Login successful", "is_admin": is_admin}
     )
     
-    # Set cookie
+    # Set cookie with production-appropriate settings
+    secure_cookie = settings.ENVIRONMENT.lower() == "production"
     response.set_cookie(
         key=SESSION_TOKEN_NAME,
         value=session_id,
         httponly=True,
         max_age=60 * 60 * 24,  # 24 hours in seconds
-        secure=True,
+        secure=secure_cookie,  # Only use secure in production
         samesite="lax"
     )
     

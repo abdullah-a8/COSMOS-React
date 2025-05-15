@@ -113,6 +113,36 @@ function App() {
   const { isAuthenticated } = useAuth({ refreshInterval: 45 });
   const isAuthPage = ['/auth', '/login', '/register'].includes(location.pathname);
   
+  // Check if we're in production environment
+  const [isProduction, setIsProduction] = useState(false);
+  
+  // Detect production environment - simpler approach
+  useEffect(() => {
+    // Check if we're not using a development URL
+    const hostname = window.location.hostname;
+    if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+      setIsProduction(true);
+    }
+  }, []);
+  
+  // Redirect from /auth to /login in production
+  useEffect(() => {
+    if (isProduction && location.pathname === '/auth') {
+      // Add a safety check to prevent infinite redirect loops
+      const redirectCount = parseInt(sessionStorage.getItem('auth_redirect_count') || '0');
+      if (redirectCount < 3) { // Allow maximum 3 redirects to prevent infinite loops
+        sessionStorage.setItem('auth_redirect_count', (redirectCount + 1).toString());
+        window.location.href = '/login';
+      } else {
+        console.error('Too many redirects detected, stopping redirect chain');
+        sessionStorage.removeItem('auth_redirect_count'); // Reset for next time
+      }
+    } else if (location.pathname !== '/auth') {
+      // Reset redirect count when on a different page
+      sessionStorage.removeItem('auth_redirect_count');
+    }
+  }, [isProduction, location.pathname]);
+  
   // Set proper viewport meta tag for mobile devices
   useEffect(() => {
     // Find existing viewport meta tag or create a new one
@@ -164,10 +194,12 @@ function App() {
         
         <div className="flex-1 flex flex-col">
           <Routes>
-            {/* Authentication routes - must always be accessible */}
-            <Route path="/auth" element={<AuthScreen />} />
+            {/* Primary authentication routes - must always be accessible */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            
+            {/* Legacy beta auth route - only shown in development environment */}
+            {!isProduction && <Route path="/auth" element={<AuthScreen />} />}
             
             {/* Protected routes */}
             <Route path="/profile" element={

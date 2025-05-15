@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi import status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse, Response
 import logging
 import os
 from fastapi import Request
@@ -205,6 +205,45 @@ async def handle_auth_form(request: Request):
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
 FRONTEND_DIST_DIR = os.path.join(PROJECT_ROOT, "frontend", "dist")
 
+# Add specific route for /auth in production - simple and direct
+@app.get("/auth")
+@app.get("/auth/")
+async def handle_auth_path(request: Request):
+    """Handle the /auth path differently in production vs development"""
+    # Check for session cookie first to avoid redirect loops
+    from .core.auth_service import validate_session, SESSION_TOKEN_NAME
+    
+    try:
+        # Get the session token and check if we're already logged in
+        db = request.state.db
+        session_token = request.cookies.get(SESSION_TOKEN_NAME)
+        
+        if session_token and await validate_session(db, session_token):
+            # User is already authenticated, send to home directly
+            logger.info("User is authenticated, redirecting from /auth to /")
+            return RedirectResponse(
+                url="/",
+                status_code=status.HTTP_303_SEE_OTHER
+            )
+    except Exception as e:
+        logger.error(f"Error checking session in auth route: {str(e)}")
+        # Continue with normal flow
+    
+    # Check for production redirect
+    if settings.ENVIRONMENT.lower() == "production":
+        logger.info("Production environment: Redirecting /auth to /login")
+        return RedirectResponse(
+            url="/login",
+            status_code=status.HTTP_303_SEE_OTHER,
+            headers={"X-Redirect-From": "auth"}  # Add header to prevent loops
+        )
+    
+    # In development, serve the auth page
+    index_html_path = os.path.join(FRONTEND_DIST_DIR, "index.html")
+    if os.path.exists(index_html_path):
+        return FileResponse(index_html_path)
+    raise HTTPException(status_code=404, detail="Frontend index.html not found.")
+
 # Add specific route for favicon
 @app.get("/favicon.ico")
 async def get_favicon():
@@ -254,10 +293,54 @@ app.mount("/assets", StaticFiles(directory=os.path.join(FRONTEND_DIST_DIR, "asse
 
 # Serve index.html for the root path
 @app.get("/")
-async def serve_root_react_app():
+async def serve_root_react_app(request: Request):
+    """Serve the root page, checking authentication status first"""
+    # Check for session cookie to avoid redirect loops
+    from .core.auth_service import validate_session, SESSION_TOKEN_NAME
+    
+    try:
+        # Get the database session
+        db = request.state.db
+        session_token = request.cookies.get(SESSION_TOKEN_NAME)
+        
+        # If user is authenticated, serve the home page
+        if session_token and await validate_session(db, session_token):
+            logger.info("User is authenticated, serving home page")
+            index_html_path = os.path.join(FRONTEND_DIST_DIR, "index.html")
+            if os.path.exists(index_html_path):
+                return FileResponse(index_html_path)
+        else:
+            # User is not authenticated, redirect to proper auth page
+            if settings.ENVIRONMENT.lower() == "production":
+                logger.info("User not authenticated, redirecting to /login")
+                # Check if this is a redirect loop
+                redirect_from = request.headers.get("X-Redirect-From")
+                if redirect_from == "login":
+                    # We're in a redirect loop, just serve the index.html file
+                    logger.warning("Detected redirect loop, serving index.html directly")
+                    index_html_path = os.path.join(FRONTEND_DIST_DIR, "index.html")
+                    if os.path.exists(index_html_path):
+                        return FileResponse(index_html_path)
+                
+                return RedirectResponse(
+                    url="/login",
+                    status_code=status.HTTP_303_SEE_OTHER,
+                    headers={"X-Redirect-From": "root"}
+                )
+            else:
+                logger.info("User not authenticated, redirecting to /auth")
+                return RedirectResponse(
+                    url="/auth",
+                    status_code=status.HTTP_303_SEE_OTHER
+                )
+    except Exception as e:
+        logger.error(f"Error in root path handler: {str(e)}")
+    
+    # Fallback - serve the index.html file
     index_html_path = os.path.join(FRONTEND_DIST_DIR, "index.html")
     if os.path.exists(index_html_path):
         return FileResponse(index_html_path)
+    
     raise HTTPException(status_code=404, detail="Frontend index.html not found.")
 
 # Serve index.html for all other paths (client-side routing)
@@ -303,6 +386,63 @@ async def serve_react_app(full_path: str):
             )
     
     # Otherwise serve index.html for client-side routing
+    index_html_path = os.path.join(FRONTEND_DIST_DIR, "index.html")
+    if os.path.exists(index_html_path):
+        return FileResponse(index_html_path)
+    raise HTTPException(status_code=404, detail="Frontend index.html not found.")
+
+# Explicitly handle auth-related React routes to ensure proper handling in production
+@app.get("/login")
+async def serve_login_page(request: Request):
+    """Serve the login page for the new authentication flow"""
+    # Check for session cookie to avoid redirect loops
+    from .core.auth_service import validate_session, SESSION_TOKEN_NAME
+    
+    try:
+        # Get the database session
+        db = request.state.db
+        session_token = request.cookies.get(SESSION_TOKEN_NAME)
+        
+        # If user is already authenticated, redirect to home
+        if session_token and await validate_session(db, session_token):
+            logger.info("User already authenticated, redirecting from login to /")
+            return RedirectResponse(
+                url="/",
+                status_code=status.HTTP_303_SEE_OTHER,
+                headers={"X-Redirect-From": "login"}
+            )
+    except Exception as e:
+        logger.error(f"Error checking session in login route: {str(e)}")
+    
+    # Serve the login page
+    index_html_path = os.path.join(FRONTEND_DIST_DIR, "index.html")
+    if os.path.exists(index_html_path):
+        return FileResponse(index_html_path)
+    raise HTTPException(status_code=404, detail="Frontend index.html not found.")
+
+@app.get("/register")
+async def serve_register_page(request: Request):
+    """Serve the registration page for the new authentication flow"""
+    # Check for session cookie to avoid redirect loops
+    from .core.auth_service import validate_session, SESSION_TOKEN_NAME
+    
+    try:
+        # Get the database session
+        db = request.state.db
+        session_token = request.cookies.get(SESSION_TOKEN_NAME)
+        
+        # If user is already authenticated, redirect to home
+        if session_token and await validate_session(db, session_token):
+            logger.info("User already authenticated, redirecting from register to /")
+            return RedirectResponse(
+                url="/",
+                status_code=status.HTTP_303_SEE_OTHER,
+                headers={"X-Redirect-From": "register"}
+            )
+    except Exception as e:
+        logger.error(f"Error checking session in register route: {str(e)}")
+    
+    # Serve the registration page
     index_html_path = os.path.join(FRONTEND_DIST_DIR, "index.html")
     if os.path.exists(index_html_path):
         return FileResponse(index_html_path)
