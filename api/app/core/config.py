@@ -98,6 +98,9 @@ class Settings(BaseSettings):
     QUERY_CACHE_SIZE: int = int(os.environ.get("QUERY_CACHE_SIZE", "100"))  # 100 entries default
     QUERY_CACHE_TTL: int = int(os.environ.get("QUERY_CACHE_TTL", "300"))  # 5 minutes TTL default
     
+    # Chat memory settings
+    MEMORY_WINDOW: int = int(os.environ.get("MEMORY_WINDOW", "20"))  # Increased from 10 to 20 for better conversation recall
+    
     # Beta Authentication Settings
     BETA_ENABLED: bool = os.environ.get("BETA_ENABLED", "true").lower() == "true"
     BETA_PASSWORD: str = os.environ.get("COSMOS_BETA_PASSWORD", "")

@@ -46,6 +46,7 @@ interface QueryResponse {
   answer: string;
   success: boolean;
   timing?: TimingInfo;
+  session_id?: string;  // Add session_id to response
 }
 
 // API base URL
@@ -70,11 +71,29 @@ export function useRagChatbot(chunkSize: number, chunkOverlap: number) {
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [statusMessage, setStatusMessage] = useState<string>('');
   
+  // State to track and persist the chat session ID
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  
   // Timer state management - simplified to match YouTube processor
   const [elapsedTime, setElapsedTime] = useState<number>(0);
   const [processingTime, setProcessingTime] = useState<number>(0);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number | null>(null);
+
+  // Initialize with localStorage session ID on component mount
+  useEffect(() => {
+    const storedSessionId = localStorage.getItem('chatSessionId');
+    if (storedSessionId) {
+      setSessionId(storedSessionId);
+      console.log('Restored chat session:', storedSessionId);
+    } else {
+      // If no session ID exists, generate a new one and store it
+      const newSessionId = crypto.randomUUID();
+      setSessionId(newSessionId);
+      localStorage.setItem('chatSessionId', newSessionId);
+      console.log('Created new chat session:', newSessionId);
+    }
+  }, []);  // Empty dependency array means this runs once on mount
 
   // URL change handler
   const handleUrlChange = useCallback((newUrl: string) => {
@@ -86,7 +105,7 @@ export function useRagChatbot(chunkSize: number, chunkOverlap: number) {
     setFile(newFile);
   }, []);
 
-  // Reset function
+  // Reset function - keeps session ID
   const reset = useCallback(() => {
     setFile(null);
     setUrl('');
@@ -106,6 +125,58 @@ export function useRagChatbot(chunkSize: number, chunkOverlap: number) {
     setElapsedTime(0);
     setProcessingTime(0);
   }, []);
+
+  // Modified clear conversation function
+  const clearConversation = () => {
+    // Clear messages from UI but preserve the session
+    setMessages([{ role: 'system', content: 'How can I help you?' }]);
+    setIsQueryProcessing(false);
+    
+    // Instead of completely clearing memory, add a special message to indicate topic reset
+    // This helps maintain session continuity while signaling a context break
+    if (sessionId) {
+      // Add a special system message to mark topic reset
+      const resetMessage = "Topic reset by user. New conversation starting.";
+      
+      // This is an informational console log, not displayed to the user
+      console.log('Conversation cleared but maintaining session ID:', sessionId);
+      
+      // Optionally, send a system message to the backend to mark the topic change
+      try {
+        fetch(`${API_BASE}/rag/query`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            query: resetMessage,
+            model_name: "system",  // Use "system" as a marker for non-user messages
+            temperature: 0,
+            filter_sources: {},
+            session_id: sessionId,
+            is_system_message: true  // Add an indicator this is a system message
+          }),
+        }).catch(err => {
+          // Silently handle errors - this is a best-effort operation
+          console.error("Failed to add reset marker to conversation history:", err);
+        });
+      } catch (e) {
+        // Ignore errors in this optional operation
+        console.log("Error adding reset message to history:", e);
+      }
+    }
+  };
+
+  // Only clear session ID when explicitly starting a new session
+  const startNewSession = () => {
+    setMessages([{ role: 'system', content: 'How can I help you?' }]);
+    setIsQueryProcessing(false);
+    const newSessionId = crypto.randomUUID();
+    setSessionId(newSessionId);
+    localStorage.setItem('chatSessionId', newSessionId);
+    console.log('Started new session with ID:', newSessionId);
+  };
 
   // Clean up on unmount
   useEffect(() => {
@@ -323,29 +394,36 @@ export function useRagChatbot(chunkSize: number, chunkOverlap: number) {
 
   // Function to send a chat message
   const sendMessage = useCallback(async (content: string, selectedModels: string[], temperature: number) => {
-    if (!content.trim() || isQueryProcessing) return;
-
     try {
-      // Add user message
-      setMessages(prev => [...prev, { role: 'user', content }]);
-      setIsQueryProcessing(true);
+      // Don't send if already processing
+      if (isQueryProcessing) {
+        return;
+      }
 
-      // Create filter object from sourceFilters
+      setIsQueryProcessing(true);
+      
+      // Add the user message to the UI immediately
+      setMessages(prev => [...prev, { role: 'user', content }]);
+      
+      // Start timing
+      startTimeRef.current = Date.now();
+      
+      // Filter source types
       const filterSourcesObject = {
         pdf: sourceFilters.pdf,
         url: sourceFilters.url,
         youtube: sourceFilters.youtube,
         image: sourceFilters.image,
       };
-
+      
+      // Log current session ID for debugging
+      console.log(`Using session ID for request: ${sessionId || 'none (new session will be created)'}`);
+      
       // If only one model is selected, use streaming
       if (selectedModels.length === 1) {
         const model = selectedModels[0];
         
         try {
-          // Don't add an empty placeholder message initially
-          // We'll add the assistant message once we receive the first chunk
-          
           // Fetch the streaming response
           const response = await fetch(`${API_BASE}/rag/query/stream`, {
             method: 'POST',
@@ -358,12 +436,23 @@ export function useRagChatbot(chunkSize: number, chunkOverlap: number) {
               model_name: model,
               temperature,
               filter_sources: filterSourcesObject,
+              session_id: sessionId, // Include session ID if available
             }),
           });
 
           if (!response.ok) {
             const errorData = await response.json();
             throw new Error(errorData.detail || `Failed to get response from ${model}`);
+          }
+
+          // Get or update session ID from response headers
+          const responseSessionId = response.headers.get('X-Session-ID');
+          if (responseSessionId) {
+            if (!sessionId || sessionId !== responseSessionId) {
+              console.log(`Updating chat session: ${sessionId || 'none'} -> ${responseSessionId}`);
+              setSessionId(responseSessionId);
+              localStorage.setItem('chatSessionId', responseSessionId);
+            }
           }
 
           if (!response.body) {
@@ -469,6 +558,7 @@ export function useRagChatbot(chunkSize: number, chunkOverlap: number) {
                 model_name: model,
                 temperature,
                 filter_sources: filterSourcesObject,
+                session_id: sessionId, // Include session ID if available
               }),
             });
 
@@ -478,6 +568,13 @@ export function useRagChatbot(chunkSize: number, chunkOverlap: number) {
             }
 
             const data: QueryResponse = await response.json();
+            
+            // Store or update session ID from response
+            if (data.session_id && (!sessionId || sessionId !== data.session_id)) {
+              setSessionId(data.session_id);
+              localStorage.setItem('chatSessionId', data.session_id);
+              console.log('New chat session established:', data.session_id);
+            }
             
             if (data.success) {
               modelResponses[model] = data.answer;
@@ -522,7 +619,7 @@ export function useRagChatbot(chunkSize: number, chunkOverlap: number) {
     } finally {
       setIsQueryProcessing(false);
     }
-  }, [isQueryProcessing, sourceFilters]);
+  }, [isQueryProcessing, sourceFilters, sessionId]);  // Add sessionId as dependency
 
   // Add upload method change handler
   const handleUploadMethodChange = useCallback((method: 'pdf' | 'url' | 'image') => {
@@ -568,5 +665,9 @@ export function useRagChatbot(chunkSize: number, chunkOverlap: number) {
     handleSubmit,
     sendMessage,
     reset,
+    clearConversation,
+    startNewSession,
+    sessionId,  // Return session ID to component
+    availableModels: [] as string[],
   };
 } 

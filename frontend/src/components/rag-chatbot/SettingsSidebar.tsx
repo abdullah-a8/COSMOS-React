@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Slider } from '../ui/slider';
 import { ModelInfo, formatModelNameForDisplay } from '../../utils/models';
-import { CheckSquare, Square, ChevronDown, ChevronUp, Info, X } from 'lucide-react';
+import { CheckSquare, Square, ChevronDown, ChevronUp, Info, X, MessageSquare, RefreshCw } from 'lucide-react';
 import { useDevice } from '../../hooks/useDevice';
 
 interface SettingsSidebarProps {
@@ -19,6 +19,9 @@ interface SettingsSidebarProps {
   onResetSettings: () => void;
   onResetChat: () => void;
   onClose: () => void;
+  sessionId?: string | null;
+  clearConversation: () => void;
+  startNewSession: () => void;
 }
 
 const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
@@ -34,7 +37,10 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
   onChunkOverlapChange,
   onResetSettings,
   onResetChat,
-  onClose
+  onClose,
+  sessionId,
+  clearConversation,
+  startNewSession
 }) => {
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
   const [selectedModelDetails, setSelectedModelDetails] = useState<string | null>(null);
@@ -74,6 +80,43 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
     visible: { y: 0 }
   };
 
+  // Session Management Section
+  const SessionManagementSection = () => (
+    <div className="mb-10">
+      <h3 className="font-medium mb-4 text-lg text-white">Session Management</h3>
+      
+      {sessionId && (
+        <div className="mb-4 p-3 bg-black/30 border border-white/10 rounded-md">
+          <div className="flex items-center mb-1">
+            <MessageSquare className="h-4 w-4 text-purple-400 mr-2" />
+            <span className="text-white/70 text-sm">Current Session ID:</span>
+          </div>
+          <div className="font-mono text-xs text-purple-300 break-all">
+            {sessionId}
+          </div>
+        </div>
+      )}
+      
+      <div className="space-y-3">
+        <button
+          onClick={clearConversation}
+          className="w-full py-2.5 px-4 flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 text-white"
+        >
+          <X className="h-4 w-4 text-purple-400" />
+          <span>Clear Messages</span>
+        </button>
+        
+        <button
+          onClick={startNewSession}
+          className="w-full py-2.5 px-4 flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 text-white"
+        >
+          <RefreshCw className="h-4 w-4 text-purple-400" />
+          <span>New Session</span>
+        </button>
+      </div>
+    </div>
+  );
+
   // Return either a bottom sheet on mobile or a sidebar on desktop
   if (isMobile) {
     return (
@@ -110,6 +153,9 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
           </div>
           
           <div className="p-6 text-white">
+            {/* Session Management Section */}
+            <SessionManagementSection />
+
             {/* Model Selection Dropdown */}
             <div className="mb-10">
               <h3 className="font-medium mb-4 text-lg text-white">Choose Models</h3>
@@ -308,6 +354,9 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({
     >
       <div className="p-6 text-white pt-10">
         <h2 className="text-2xl font-bold mb-8 text-purple-300">Settings</h2>
+
+        {/* Session Management Section */}
+        <SessionManagementSection />
 
         {/* Model Selection Dropdown */}
         <div className="mb-10">

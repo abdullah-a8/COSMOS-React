@@ -19,7 +19,7 @@ const RagChatbot: React.FC = () => {
   const [chunkSize, setChunkSize] = useState(500);
   const [chunkOverlap, setChunkOverlap] = useState(50);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
-
+  
   // Update sidebar state when device type changes
   useEffect(() => {
     setIsSidebarOpen(false);
@@ -68,8 +68,15 @@ const RagChatbot: React.FC = () => {
     handleUploadMethodChange,
     sendMessage,
     setSourceFilters,
-    reset
+    sessionId,
+    clearConversation,
+    startNewSession,
   } = useRagChatbot(chunkSize, chunkOverlap);
+
+  // Log the session ID whenever it changes
+  useEffect(() => {
+    console.log('Current chat session ID:', sessionId);
+  }, [sessionId]);
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
@@ -83,7 +90,7 @@ const RagChatbot: React.FC = () => {
   };
 
   const handleResetChat = () => {
-    reset();
+    clearConversation();
   };
 
   const handleContentUpload = () => {
@@ -138,6 +145,9 @@ const RagChatbot: React.FC = () => {
               onResetSettings={resetSettings}
               onResetChat={handleResetChat}
               onClose={toggleSidebar}
+              sessionId={sessionId}
+              clearConversation={clearConversation}
+              startNewSession={startNewSession}
             />
           </AnimatePresence>
 
@@ -186,10 +196,12 @@ const RagChatbot: React.FC = () => {
               <ChatInterface
                 messages={messages}
                 onSendMessage={handleSendMessage}
-                isProcessing={isProcessing}
-                isQueryProcessing={isQueryProcessing}
+                isLoading={isQueryProcessing}
                 sourceFilters={sourceFilters}
                 onSourceFiltersChange={setSourceFilters}
+                sessionId={sessionId}
+                clearConversation={clearConversation}
+                startNewSession={startNewSession}
               />
             </div>
           </main>

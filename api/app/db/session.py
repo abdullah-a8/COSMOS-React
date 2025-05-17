@@ -57,6 +57,25 @@ engine = create_async_engine(
 # Create session factory
 async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
+def get_db_connection_string() -> str:
+    """
+    Returns a standard PostgreSQL connection string for use with PostgresChatMessageHistory.
+    This function converts the SQLAlchemy connection string to a standard PostgreSQL
+    connection string suitable for use with langchain_postgres.
+    """
+    # Convert from SQLAlchemy format to standard psycopg format
+    conn_string = DATABASE_URL
+    
+    # Convert from SQLAlchemy asyncpg format
+    if conn_string.startswith("postgresql+asyncpg://"):
+        conn_string = conn_string.replace("postgresql+asyncpg://", "postgresql://", 1)
+    
+    # Convert from SQLAlchemy psycopg format
+    elif conn_string.startswith("postgresql+psycopg://"):
+        conn_string = conn_string.replace("postgresql+psycopg://", "postgresql://", 1)
+    
+    return conn_string
+
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """Dependency for getting async db session"""
     async with async_session() as session:

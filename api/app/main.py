@@ -18,6 +18,7 @@ from .routers import rag, youtube, gmail, admin, users
 from .dependencies import get_vector_store_singleton, get_embeddings_singleton
 from .db.session import init_models, engine
 from .workers.cleanup import run_cleanup
+from .utils.memory import ChatMemoryManager
 
 # Set up logging
 logging.basicConfig(
@@ -82,6 +83,13 @@ async def startup_event():
         logger.info("Database models initialized successfully")
     except Exception as e:
         logger.error(f"Failed to initialize database models: {e}")
+    
+    # Initialize chat memory table
+    try:
+        await ChatMemoryManager.ensure_table_exists()
+        logger.info("Chat memory table initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize chat memory table: {e}")
     
     # Set up scheduled tasks
     cleanup_hours = getattr(settings, "AUTH_CLEANUP_INTERVAL_HOURS", 12)

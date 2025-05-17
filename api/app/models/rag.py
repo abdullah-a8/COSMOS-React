@@ -10,6 +10,8 @@ class QueryRequest(BaseModel):
         None, 
         description="Filters for specific source types (pdf, url, youtube)"
     )
+    session_id: Optional[str] = Field(None, description="Session ID for chat history persistence")
+    is_system_message: Optional[bool] = Field(False, description="Flag to indicate if this is a system message for topic reset")
 
 class ProcessDocumentRequest(BaseModel):
     chunk_size: int = Field(512, description="The size of each text chunk")
@@ -33,6 +35,7 @@ class QueryResponse(BaseModel):
     answer: str = Field(..., description="The answer from the RAG system")
     success: bool = Field(..., description="Whether the query was successful")
     timing: Optional[TimingInfo] = Field(None, description="Timing information for performance monitoring")
+    session_id: Optional[str] = Field(None, description="Session ID for chat history persistence")
     
 class ProcessDocumentResponse(BaseModel):
     success: bool = Field(..., description="Whether the document was processed successfully")
