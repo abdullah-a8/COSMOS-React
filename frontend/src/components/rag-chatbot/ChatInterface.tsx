@@ -8,7 +8,6 @@ import rehypeRaw from 'rehype-raw';
 import 'katex/dist/katex.min.css';
 import type { Components } from 'react-markdown';
 import LaTeXErrorBoundary from './LaTeXErrorBoundary';
-import { Button } from '@/components/ui/button';
 
 interface Message {
   role: 'user' | 'assistant' | 'system';
@@ -30,8 +29,8 @@ interface ChatInterfaceProps {
   sourceFilters: SourceFilters;
   onSourceFiltersChange: (filters: SourceFilters) => void;
   sessionId?: string | null;
-  clearConversation: () => void;
-  startNewSession: () => void;
+  clearConversation?: () => void;
+  startNewSession?: () => void;
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
@@ -40,9 +39,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   isLoading,
   sourceFilters,
   onSourceFiltersChange,
-  sessionId,
-  clearConversation,
-  startNewSession,
 }) => {
   const [input, setInput] = useState('');
   const [filtersOpen, setFiltersOpen] = useState(false);
