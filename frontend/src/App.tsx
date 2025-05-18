@@ -1,6 +1,7 @@
 import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { SparklesCore } from './components/sparkles';
 import Navbar from './components/navbar';
+import ScrollToTop from './components/ScrollToTop';
 import Home from './pages/Home';
 import LandingPage from './pages/landing-page';
 import RagChatbot from './pages/RagChatbot';
@@ -15,6 +16,9 @@ import { RoboAnimation } from './components/robo-animation';
 import { useDevice } from './hooks/useDevice';
 import { useAuth } from './hooks/useAuth.tsx';
 import { useEffect, useState } from 'react';
+import TermsOfService from './pages/policy/TermsOfService';
+import PrivacyPolicy from './pages/policy/PrivacyPolicy';
+import About from './pages/policy/About';
 
 // Protected route component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -177,6 +181,9 @@ function App() {
 
   return (
     <div className="min-h-screen bg-black/[0.96] antialiased relative overflow-x-hidden">
+      {/* ScrollToTop component to reset scroll position on navigation */}
+      <ScrollToTop />
+      
       {/* Ambient background with moving particles - fixed to cover entire page */}
       <div className="fixed inset-0 z-0">
         <SparklesCore
@@ -198,6 +205,11 @@ function App() {
           <Routes>
             {/* Landing Page */}
             <Route path="/" element={<LandingPage />} />
+
+            {/* Policy pages */}
+            <Route path="/terms" element={<TermsOfService />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/about" element={<About />} />
 
             {/* Primary authentication routes - must always be accessible */}
             <Route path="/login" element={<LoginPage />} />

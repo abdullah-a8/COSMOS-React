@@ -3,8 +3,7 @@
 import React, { useState, useEffect } from "react"
 import { Link } from "react-router-dom"
 import { Button } from "./ui/button"
-import { 
-  Bot, 
+import {
   Menu, 
   X, 
   ChevronRight, 
@@ -13,7 +12,8 @@ import {
   MessageSquare, 
   Youtube, 
   Mail,
-  Settings
+  Settings,
+  Sparkles
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useDevice } from "../hooks/useDevice"
@@ -59,9 +59,51 @@ export default function Navbar() {
         </div>
         
         {/* Logo */}
-        <Link to={isAuthenticated ? "/dashboard" : "/"} className="flex items-center space-x-2 relative z-20">
-          <Bot className={`${isMobile ? 'w-6 h-6' : 'w-7 h-7'} text-purple-500`} />
-          <span className="text-white font-semibold text-lg">COSMOS</span>
+        <Link to={isAuthenticated ? "/dashboard" : "/"} className="flex items-center space-x-2 z-20 group relative">
+          <motion.div
+            className="relative"
+            whileHover={{ rotate: 10, scale: 1.1 }}
+            transition={{ type: "spring", stiffness: 400, damping: 10 }}
+          >
+            <motion.div
+              className="absolute inset-0 bg-primary/30 rounded-full blur-lg"
+              animate={{
+                scale: [1, 1.2, 1],
+                opacity: [0.3, 0.5, 0.3],
+              }}
+              transition={{
+                duration: 3, 
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+            />
+            <motion.img 
+              src="/cosmos_app.png" 
+              alt="COSMOS" 
+              className="h-8 w-8 md:h-10 md:w-10 relative"
+            />
+            <motion.div
+              className="absolute -top-1 -right-1 text-primary"
+              animate={{
+                rotate: [0, 10, 0, -10, 0],
+                scale: [1, 1.1, 1],
+              }}
+              transition={{
+                duration: 5, 
+                repeat: Infinity,
+                ease: "easeInOut",
+                times: [0, 0.2, 0.5, 0.8, 1]
+              }}
+            >
+              <Sparkles size={12} />
+            </motion.div>
+          </motion.div>
+          
+          <div className="flex flex-col items-start">
+            <span className="text-foreground font-semibold text-base sm:text-lg md:text-xl bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-indigo-500 to-purple-600">
+              COSMOS
+            </span>
+          </div>
         </Link>
 
         {/* Right side navigation */}

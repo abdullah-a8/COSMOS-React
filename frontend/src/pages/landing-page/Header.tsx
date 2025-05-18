@@ -153,9 +153,6 @@ const Header: React.FC = () => {
             <span className="text-foreground font-semibold text-base sm:text-lg md:text-xl bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-indigo-500 to-purple-600">
               COSMOS
             </span>
-            <span className="text-xs text-foreground/80 hidden md:inline-block">
-              AI Assistant Platform
-            </span>
           </div>
         </Link>
         
