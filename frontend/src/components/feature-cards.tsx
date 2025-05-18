@@ -7,6 +7,18 @@ import { useDevice } from "../hooks/useDevice"
 export default function FeatureCards() {
   const { isMobile } = useDevice();
 
+  // Card hover animation variant - separating hover effect from card styling
+  const cardHoverVariants = {
+    initial: { 
+      borderColor: "rgba(255, 255, 255, 0.1)"
+    },
+    hover: { 
+      borderColor: "rgba(168, 85, 247, 0.5)",
+      boxShadow: "0 0 20px 0 rgba(168, 85, 247, 0.15)",
+      transition: { duration: 0.3 }
+    }
+  };
+
   return (
     <section className="relative z-10 w-full max-w-6xl mx-auto px-4 sm:px-6 pb-16 -mt-5 sm:mt-0">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
@@ -15,7 +27,9 @@ export default function FeatureCards() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="bg-black/50 backdrop-blur-sm border border-white/10 rounded-xl p-5 md:p-6 hover:border-purple-500/50 transition-all flex flex-col h-full shadow-lg"
+          whileHover="hover" 
+          variants={cardHoverVariants}
+          className="bg-black/50 border border-white/10 rounded-xl p-5 md:p-6 transition-all duration-300 flex flex-col h-full shadow-lg"
         >
           <div className="mb-4 flex items-center">
             <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center mr-3">
@@ -40,7 +54,9 @@ export default function FeatureCards() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="bg-black/50 backdrop-blur-sm border border-white/10 rounded-xl p-5 md:p-6 hover:border-purple-500/50 transition-all flex flex-col h-full shadow-lg"
+          whileHover="hover" 
+          variants={cardHoverVariants}
+          className="bg-black/50 border border-white/10 rounded-xl p-5 md:p-6 transition-all duration-300 flex flex-col h-full shadow-lg"
         >
           <div className="mb-4 flex items-center">
             <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center mr-3">
@@ -64,7 +80,9 @@ export default function FeatureCards() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
-          className="bg-black/50 backdrop-blur-sm border border-white/10 rounded-xl p-5 md:p-6 hover:border-purple-500/50 transition-all flex flex-col h-full shadow-lg"
+          whileHover="hover" 
+          variants={cardHoverVariants}
+          className="bg-black/50 border border-white/10 rounded-xl p-5 md:p-6 transition-all duration-300 flex flex-col h-full shadow-lg"
         >
           <div className="mb-4 flex items-center">
             <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center mr-3">

@@ -318,29 +318,12 @@ async def serve_root_react_app(request: Request):
             if os.path.exists(index_html_path):
                 return FileResponse(index_html_path)
         else:
-            # User is not authenticated, redirect to proper auth page
-            if settings.ENVIRONMENT.lower() == "production":
-                logger.info("User not authenticated, redirecting to /login")
-                # Check if this is a redirect loop
-                redirect_from = request.headers.get("X-Redirect-From")
-                if redirect_from == "login":
-                    # We're in a redirect loop, just serve the index.html file
-                    logger.warning("Detected redirect loop, serving index.html directly")
-                    index_html_path = os.path.join(FRONTEND_DIST_DIR, "index.html")
-                    if os.path.exists(index_html_path):
-                        return FileResponse(index_html_path)
-                
-                return RedirectResponse(
-                    url="/login",
-                    status_code=status.HTTP_303_SEE_OTHER,
-                    headers={"X-Redirect-From": "root"}
-                )
-            else:
-                logger.info("User not authenticated, redirecting to /auth")
-                return RedirectResponse(
-                    url="/auth",
-                    status_code=status.HTTP_303_SEE_OTHER
-                )
+            # User is not authenticated, always serve the landing page 
+            # without redirection in both dev and production
+            logger.info("User not authenticated, serving landing page")
+            index_html_path = os.path.join(FRONTEND_DIST_DIR, "index.html")
+            if os.path.exists(index_html_path):
+                return FileResponse(index_html_path)
     except Exception as e:
         logger.error(f"Error in root path handler: {str(e)}")
     

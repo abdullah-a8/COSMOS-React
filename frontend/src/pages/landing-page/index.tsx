@@ -39,10 +39,18 @@ const LandingPage: React.FC = () => {
       </div>
 
       <Header />
-      <Hero />
-      <Features />
-      <HowItWorks />
-      <CTA />
+      <div id="hero-section">
+        <Hero />
+      </div>
+      <div id="features-section">
+        <Features />
+      </div>
+      <div id="how-it-works-section">
+        <HowItWorks />
+      </div>
+      <div id="cta-section">
+        <CTA />
+      </div>
       <Footer />
     </div>
   );
