@@ -6,6 +6,10 @@ const config: Config = {
     "./index.html"
   ],
   theme: {
+    fontFamily: {
+      sans: ["var(--font-sans)"],
+      heading: ["var(--font-heading)"],
+    },
   	extend: {
   		colors: {
   			background: 'hsl(var(--background))',

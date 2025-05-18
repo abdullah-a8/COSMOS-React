@@ -17,12 +17,12 @@ import {
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useDevice } from "../hooks/useDevice"
-import { useAuth } from "../hooks/useAuth"
+import { useAuth } from "../hooks/useAuth.tsx"
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const { isMobile } = useDevice();
-  const { isAdmin } = useAuth({ refreshInterval: 0 });
+  const { isAdmin, isAuthenticated } = useAuth({ refreshInterval: 0 });
   
   // Open GitHub repository in a new tab
   const openGitHubRepo = () => {
@@ -59,60 +59,78 @@ export default function Navbar() {
         </div>
         
         {/* Logo */}
-        <Link to="/" className="flex items-center space-x-2 relative z-20">
+        <Link to={isAuthenticated ? "/dashboard" : "/"} className="flex items-center space-x-2 relative z-20">
           <Bot className={`${isMobile ? 'w-6 h-6' : 'w-7 h-7'} text-purple-500`} />
           <span className="text-white font-semibold text-lg">COSMOS</span>
         </Link>
 
-        {/* Main Navigation Icons */}
+        {/* Right side navigation */}
         <div className="flex items-center gap-4 relative z-20">
-          {/* Home Icon */}
-          <IconNavLink to="/">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center shadow-md">
-              <Home className="w-4 h-4 text-white" />
-            </div>
-          </IconNavLink>
-          
-          {/* Profile Icon */}
-          <IconNavLink to="/profile">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-md">
-              <User className="w-4 h-4 text-white" />
-            </div>
-          </IconNavLink>
-          
-          {/* Hamburger Menu Button - Improved size and spacing */}
-          <Button 
-            id="menu-button"
-            variant="ghost" 
-            size="icon" 
-            className="text-white relative z-20 ml-1 p-2 h-10 w-10 rounded-full hover:bg-white/10"
-            onClick={() => setMenuOpen(!menuOpen)}
-            aria-label={menuOpen ? "Close menu" : "Open menu"}
-          >
-            <AnimatePresence mode="wait">
-              {menuOpen ? (
-                <motion.div
-                  key="close"
-                  initial={{ rotate: -90, opacity: 0 }}
-                  animate={{ rotate: 0, opacity: 1 }}
-                  exit={{ rotate: 90, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <X className="w-5 h-5" />
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="menu"
-                  initial={{ rotate: 90, opacity: 0 }}
-                  animate={{ rotate: 0, opacity: 1 }}
-                  exit={{ rotate: -90, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <Menu className="w-5 h-5" />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </Button>
+          {isAuthenticated ? (
+            <>
+              {/* Home Icon */}
+              <IconNavLink to="/dashboard">
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center shadow-md">
+                  <Home className="w-4 h-4 text-white" />
+                </div>
+              </IconNavLink>
+              
+              {/* Profile Icon */}
+              <IconNavLink to="/profile">
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center shadow-md">
+                  <User className="w-4 h-4 text-white" />
+                </div>
+              </IconNavLink>
+              
+              {/* Hamburger Menu Button - Improved size and spacing */}
+              <Button 
+                id="menu-button"
+                variant="ghost" 
+                size="icon" 
+                className="text-white relative z-20 ml-1 p-2 h-10 w-10 rounded-full hover:bg-white/10"
+                onClick={() => setMenuOpen(!menuOpen)}
+                aria-label={menuOpen ? "Close menu" : "Open menu"}
+              >
+                <AnimatePresence mode="wait">
+                  {menuOpen ? (
+                    <motion.div
+                      key="close"
+                      initial={{ rotate: -90, opacity: 0 }}
+                      animate={{ rotate: 0, opacity: 1 }}
+                      exit={{ rotate: 90, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <X className="w-5 h-5" />
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="menu"
+                      initial={{ rotate: 90, opacity: 0 }}
+                      animate={{ rotate: 0, opacity: 1 }}
+                      exit={{ rotate: -90, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <Menu className="w-5 h-5" />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </Button>
+            </>
+          ) : (
+            <>
+              {/* Login/Register buttons for non-authenticated users */}
+              <Link to="/login">
+                <Button variant="ghost" className="text-white hover:bg-white/10">
+                  Login
+                </Button>
+              </Link>
+              <Link to="/register">
+                <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+                  Register
+                </Button>
+              </Link>
+            </>
+          )}
         </div>
       </motion.nav>
 

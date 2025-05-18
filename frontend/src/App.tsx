@@ -2,6 +2,7 @@ import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { SparklesCore } from './components/sparkles';
 import Navbar from './components/navbar';
 import Home from './pages/Home';
+import LandingPage from './pages/landing-page';
 import RagChatbot from './pages/RagChatbot';
 import YouTubeProcessor from './pages/YouTubeProcessor';
 import GmailResponder from './pages/GmailResponder';
@@ -12,7 +13,7 @@ import LoginPage from './pages/auth/LoginPage';
 import ProfilePage from './pages/auth/ProfilePage';
 import { RoboAnimation } from './components/robo-animation';
 import { useDevice } from './hooks/useDevice';
-import { useAuth } from './hooks/useAuth';
+import { useAuth } from './hooks/useAuth.tsx';
 import { useEffect, useState } from 'react';
 
 // Protected route component
@@ -112,6 +113,7 @@ function App() {
   const location = useLocation();
   const { isAuthenticated } = useAuth({ refreshInterval: 45 });
   const isAuthPage = ['/auth', '/login', '/register'].includes(location.pathname);
+  const isLandingPage = location.pathname === '/';
   
   // Check if we're in production environment
   const [isProduction, setIsProduction] = useState(false);
@@ -189,11 +191,14 @@ function App() {
       </div>
 
       <div className="relative z-10 min-h-screen flex flex-col overflow-x-hidden">
-        {/* Only show navbar if not on auth page and authenticated */}
-        {!isAuthPage && isAuthenticated && <Navbar />}
+        {/* Only show navbar if not on auth page or landing page and authenticated */}
+        {!isAuthPage && !isLandingPage && isAuthenticated && <Navbar />}
         
         <div className="flex-1 flex flex-col">
           <Routes>
+            {/* Landing Page */}
+            <Route path="/" element={<LandingPage />} />
+
             {/* Primary authentication routes - must always be accessible */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
@@ -207,7 +212,7 @@ function App() {
                 <ProfilePage />
               </ProtectedRoute>
             } />
-            <Route path="/" element={
+            <Route path="/dashboard" element={
               <ProtectedRoute>
                 <Home />
               </ProtectedRoute>
@@ -233,15 +238,15 @@ function App() {
               </AdminRoute>
             } />
             
-            {/* Redirect non-authenticated users to login for unknown routes */}
+            {/* Redirect unauthenticated users to landing page for unknown routes */}
             <Route path="*" element={
-              isAuthenticated ? <Navigate to="/" replace /> : <Navigate to="/login" replace />
+              isAuthenticated ? <Navigate to="/dashboard" replace /> : <Navigate to="/" replace />
             } />
           </Routes>
         </div>
 
-        {/* Animated robot - Only shown on non-auth pages and non-mobile devices when authenticated */}
-        {!isAuthPage && !isMobile && isAuthenticated && (
+        {/* Animated robot - Only shown on non-auth pages and non-landing page and non-mobile devices when authenticated */}
+        {!isAuthPage && !isLandingPage && !isMobile && isAuthenticated && (
           <div className="fixed bottom-4 right-4 w-64 h-64 z-10 pointer-events-none">
             <RoboAnimation />
           </div>

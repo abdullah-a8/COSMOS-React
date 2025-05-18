@@ -11,6 +11,7 @@ interface SparklesProps {
   particleDensity?: number
   className?: string
   particleColor?: string
+  followMouse?: boolean
 }
 
 export const SparklesCore = ({
@@ -21,6 +22,7 @@ export const SparklesCore = ({
   particleDensity = 100,
   className = "h-full w-full",
   particleColor = "#FFFFFF",
+  followMouse = true,
 }: SparklesProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const mousePosition = useMousePosition()
@@ -82,7 +84,7 @@ export const SparklesCore = ({
         const dx = mousePosition.x - this.x
         const dy = mousePosition.y - this.y
         const distance = Math.sqrt(dx * dx + dy * dy)
-        if (distance < 100) {
+        if (followMouse && distance < 100) {
           const angle = Math.atan2(dy, dx)
           this.x -= Math.cos(angle) * 1
           this.y -= Math.sin(angle) * 1
@@ -137,7 +139,7 @@ export const SparklesCore = ({
       window.removeEventListener("resize", handleResize)
       cancelAnimationFrame(animationFrameId)
     }
-  }, [maxSize, minSize, particleColor, particleDensity, mousePosition.x, mousePosition.y])
+  }, [maxSize, minSize, particleColor, particleDensity, mousePosition.x, mousePosition.y, followMouse])
 
   return (
     <canvas

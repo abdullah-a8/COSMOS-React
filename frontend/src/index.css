@@ -11,6 +11,12 @@
 html, body {
   overflow-x: hidden; /* Prevent horizontal scrolling */
   -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+  font-family: var(--font-sans);
+}
+
+/* Add heading styles */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
 }
 
 /* Fix for mobile viewport height issue (100vh) */

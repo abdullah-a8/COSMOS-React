@@ -28,6 +28,9 @@ EXCLUDED_PATHS = {
     "/api/v1/users/logout",    # Allow logout without CSRF token
     "/api/v1/csrf-token",      # CSRF token endpoint itself should be excluded
     
+    # Root path for landing page 
+    "/",
+    
     # Additional auth endpoints for complete coverage
     "/api/v1/users/me",        # User profile info should work without CSRF
     "/api/v1/users/invite",    # Invite code creation

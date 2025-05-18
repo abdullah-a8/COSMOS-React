@@ -138,9 +138,9 @@ const LoginPage: React.FC = () => {
       return;
     }
     
-    // If already authenticated, redirect to home
+    // If already authenticated, redirect to dashboard
     if (isAuthenticated) {
-      navigate('/');
+      navigate('/dashboard');
     }
   }, [navigate, searchParams, isAuthenticated]);
   
@@ -148,10 +148,10 @@ const LoginPage: React.FC = () => {
     setError(null);
     setSuccess('Login successful! Redirecting...');
     
-    // Redirect to home page after a brief delay
+    // Redirect to dashboard page after a brief delay
     setTimeout(() => {
       // Use window.location for a hard refresh to ensure clean state
-      window.location.href = '/';
+      window.location.href = '/dashboard';
     }, 1000);
   };
   
@@ -183,6 +183,14 @@ const LoginPage: React.FC = () => {
       {/* Purple glow effects */}
       <div className="absolute w-96 h-96 bg-purple-600/20 rounded-full filter blur-3xl opacity-30 z-0 animate-pulse"></div>
       <div className="absolute w-64 h-64 bg-blue-600/20 -right-20 -bottom-20 rounded-full filter blur-3xl opacity-20 z-0"></div>
+      
+      {/* Back to home */}
+      <Link to="/" className="absolute top-4 left-4 text-white/70 hover:text-white font-medium flex items-center transition-colors z-10">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+          <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+        </svg>
+        Back to Home
+      </Link>
       
       {/* Beta badge */}
       <div className="absolute top-4 right-4 backdrop-blur-sm border border-white/20 shadow-xl px-4 py-1.5 rounded-full z-10 overflow-hidden group hover:border-purple-500/50 transition-all duration-300">

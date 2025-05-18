@@ -31,6 +31,11 @@ EXCLUDED_PATHS = [
     "/favicon.ico",
     "/cosmos_app.png",
     "/auth", 
+    "/index.html",
+    "/app.html",
+    
+    # Root path for landing page
+    "/",
     
     # New auth endpoints
     "/login",
@@ -51,6 +56,10 @@ EXCLUDED_PATHS = [
 # Additional static resource paths
 STATIC_PATH_PREFIXES = [
     "/assets/",
+    "/public/",   # Add public assets directory
+    "/images/",   # Add images directory
+    "/css/",      # Add CSS directory
+    "/js/",       # Add JavaScript directory
 ]
 
 def is_path_excluded(path: str) -> bool:

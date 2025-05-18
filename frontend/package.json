@@ -13,6 +13,8 @@
     "node": "22.14.0"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.2.5",
+    "@lottiefiles/react-lottie-player": "^3.6.0",
     "@radix-ui/react-accordion": "^1.2.7",
     "@radix-ui/react-alert-dialog": "^1.1.10",
     "@radix-ui/react-aspect-ratio": "^1.1.4",
@@ -45,9 +47,10 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "embla-carousel-react": "^8.6.0",
-    "framer-motion": "^11.0.8",
+    "framer-motion": "^11.18.2",
     "input-otp": "^1.4.2",
     "katex": "^0.16.22",
+    "lottie-web": "^5.12.2",
     "lucide-react": "^0.488.0",
     "next-themes": "^0.4.6",
     "react": "^19.0.0",
@@ -57,6 +60,7 @@
     "react-markdown": "^10.1.0",
     "react-resizable-panels": "^2.1.7",
     "react-router-dom": "^7.5.0",
+    "react-tilty": "^3.0.0",
     "recharts": "^2.15.3",
     "rehype-katex": "^7.0.1",
     "rehype-raw": "^7.0.0",
