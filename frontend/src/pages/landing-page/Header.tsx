@@ -2,7 +2,6 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { Button } from '../../components/ui/button';
-import { Bot } from 'lucide-react';
 
 const Header: React.FC = () => {
   // Navbar scroll effect
