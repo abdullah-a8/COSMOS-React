@@ -36,6 +36,12 @@ EXCLUDED_PATHS = [
     
     # Root path for landing page
     "/",
+        
+    # Public pages
+    "/terms",
+    "/privacy-policy",
+    "/about",
+    "/pricing",
     
     # New auth endpoints
     "/login",
