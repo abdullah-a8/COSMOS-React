@@ -25,7 +25,6 @@ async def validate_access_code(db: AsyncSession, code: str) -> tuple[bool, str]:
             - "empty": Empty code provided
             - "invalid": Code doesn't match any known code
             - "expired": Code exists but has expired
-            - "used": Code exists but has reached max redemptions
             - "system": System error occurred
     """
     # Input validation
@@ -40,10 +39,6 @@ async def validate_access_code(db: AsyncSession, code: str) -> tuple[bool, str]:
             or_(
                 InviteCode.expires_at == None,
                 InviteCode.expires_at > get_utc_now()
-            ),
-            or_(
-                InviteCode.max_redemptions == 0,  # Unlimited
-                InviteCode.redemption_count < InviteCode.max_redemptions
             )
         )
     )
@@ -66,7 +61,7 @@ async def validate_access_code(db: AsyncSession, code: str) -> tuple[bool, str]:
                 
                 # Log successful validation with details
                 email_info = f" for {invite_code.email}" if invite_code.email else ""
-                logger.info(f"Valid access code used{email_info}. Redemption count: {invite_code.redemption_count}/{invite_code.max_redemptions or 'unlimited'}")
+                logger.info(f"Valid access code used{email_info}. Redemption count: {invite_code.redemption_count}")
                 
                 await db.commit()
                 return True, ""
@@ -88,23 +83,6 @@ async def validate_access_code(db: AsyncSession, code: str) -> tuple[bool, str]:
                 status = "active" if expired_code.is_active else "deactivated"
                 logger.warning(f"Expired access code used ({status}). Expired at: {expired_code.expires_at}")
                 return False, "expired"
-        
-        # Check for maxed-out codes
-        used_stmt = select(InviteCode).where(
-            and_(
-                InviteCode.is_active == True,
-                InviteCode.max_redemptions > 0,
-                InviteCode.redemption_count >= InviteCode.max_redemptions
-            )
-        )
-        
-        result = await db.execute(used_stmt)
-        used_codes = result.scalars().all()
-        
-        for used_code in used_codes:
-            if InviteCode.verify_code(code, used_code.code_hash):
-                logger.warning(f"Used up access code. Max redemptions: {used_code.max_redemptions}")
-                return False, "used"
         
         # No matching code found at all
         logger.warning(f"Invalid access code provided in authentication attempt")

@@ -78,5 +78,4 @@ class UpdateDisplayName(BaseModel):
 class CreateInviteCode(BaseModel):
     """Schema for creating an invite code."""
     email: EmailStr
-    expires_at: Optional[str] = None
-    max_redemptions: int = Field(1, ge=1) 
+    expires_at: Optional[str] = None 

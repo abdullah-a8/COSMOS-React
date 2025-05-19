@@ -48,7 +48,7 @@ async def create_invite():
             admin_email = input("Enter admin email: ")
             
         # Generate invite code
-        invite, plain_code = InviteCode.generate(email=admin_email, expires_days=None, max_redemptions=5)
+        invite, plain_code = InviteCode.generate(email=admin_email, expires_days=None)
         session.add(invite)
         await session.commit()
         
@@ -59,7 +59,6 @@ async def create_invite():
                 await send_invite_code_email(
                     to_email=admin_email,
                     invite_code=plain_code,
-                    max_redemptions=invite.max_redemptions,
                     expires_at=invite.expires_at,
                     redemption_count=invite.redemption_count
                 )

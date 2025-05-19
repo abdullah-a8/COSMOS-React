@@ -60,7 +60,6 @@ async def admin_required(request: Request, db: AsyncSession = Depends(get_db)):
 class InviteCodeCreate(BaseModel):
     email: Optional[EmailStr] = None
     expires_days: Optional[int] = 30
-    max_redemptions: int = 1
 
 class InviteCodeResponse(BaseModel):
     id: int
@@ -70,7 +69,6 @@ class InviteCodeResponse(BaseModel):
     expires_at: Optional[datetime] = None
     is_active: bool
     redemption_count: int
-    max_redemptions: int
 
 class InviteCodeListResponse(BaseModel):
     id: int
@@ -79,7 +77,6 @@ class InviteCodeListResponse(BaseModel):
     expires_at: Optional[datetime] = None
     is_active: bool
     redemption_count: int
-    max_redemptions: int
 
 # Routes
 @router.post("/invite-codes", response_model=InviteCodeResponse)
@@ -97,19 +94,11 @@ async def create_invite_code(
                 detail="Expiration days must be a positive number or null for no expiration"
             )
             
-        # Validate max_redemptions - must be positive
-        if data.max_redemptions <= 0:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Maximum redemptions must be a positive number"
-            )
-            
-        logger.info(f"Generating invite code with parameters: email={data.email}, expires_days={data.expires_days}, max_redemptions={data.max_redemptions}")
+        logger.info(f"Generating invite code with parameters: email={data.email}, expires_days={data.expires_days}")
         
         invite_obj, plain_code = InviteCode.generate(
             email=data.email,
-            expires_days=data.expires_days,
-            max_redemptions=data.max_redemptions
+            expires_days=data.expires_days
         )
         
         logger.debug(f"Invite code object created, adding to database")
@@ -141,7 +130,6 @@ async def create_invite_code(
                 await send_invite_code_email(
                     to_email=data.email,
                     invite_code=plain_code,
-                    max_redemptions=invite_obj.max_redemptions,
                     expires_at=invite_obj.expires_at,
                     redemption_count=invite_obj.redemption_count
                 )
@@ -159,8 +147,7 @@ async def create_invite_code(
             "created_at": invite_obj.created_at,
             "expires_at": invite_obj.expires_at,
             "is_active": invite_obj.is_active,
-            "redemption_count": invite_obj.redemption_count,
-            "max_redemptions": invite_obj.max_redemptions
+            "redemption_count": invite_obj.redemption_count
         }
     except HTTPException:
         # Re-raise HTTP exceptions as they're already properly formatted

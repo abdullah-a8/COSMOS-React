@@ -9,7 +9,6 @@ export interface InviteCode {
   expires_at: string | null;
   is_active: boolean;
   redemption_count: number;
-  max_redemptions: number;
 }
 
 interface AdminStore {

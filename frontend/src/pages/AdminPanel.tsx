@@ -14,13 +14,12 @@ interface InviteCode {
   expires_at: string | null;
   is_active: boolean;
   redemption_count: number;
-  max_redemptions: number;
 }
 
+// Define type for the new code form
 interface NewInviteCode {
   email: string;
-  expires_days: number;
-  max_redemptions: number;
+  expires_days: number | null;
 }
 
 interface CreateResponse {
@@ -64,8 +63,7 @@ export default function AdminPanel() {
   const [showActiveOnly, setShowActiveOnly] = useState<boolean>(storeActiveFilter);
   const [newCode, setNewCode] = useState<NewInviteCode>({
     email: '',
-    expires_days: 30,
-    max_redemptions: 1
+    expires_days: null
   });
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -222,14 +220,7 @@ export default function AdminPanel() {
       return;
     }
     
-    // Validate max_redemptions
-    if (newCode.max_redemptions <= 0) {
-      setError('Maximum redemptions must be greater than zero');
-      storeSetError('Maximum redemptions must be greater than zero');
-      return;
-    }
-    
-    // Validate expires_days if provided
+    // Validate expires_days
     if (newCode.expires_days !== null && newCode.expires_days < 0) {
       setError('Expiration days must be a positive number or zero');
       storeSetError('Expiration days must be a positive number or zero');
@@ -272,8 +263,7 @@ export default function AdminPanel() {
       // Reset form
       setNewCode({
         email: '',
-        expires_days: 30,
-        max_redemptions: 1
+        expires_days: null
       });
     } catch (err) {
       // Get error message from the Error object or use a default
@@ -397,29 +387,13 @@ export default function AdminPanel() {
               <input
                 type="number"
                 id="expires_days"
-                value={newCode.expires_days}
-                onChange={(e) => setNewCode({...newCode, expires_days: parseInt(e.target.value)})}
+                value={newCode.expires_days || ''}
+                onChange={(e) => setNewCode({...newCode, expires_days: parseInt(e.target.value) || null})}
                 min="0"
                 placeholder="30"
                 className="w-full px-3 py-2 bg-black/30 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 transition-colors"
               />
               <p className="text-xs text-white/50 mt-1">Set to 0 for never expires</p>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-white/70 mb-1" htmlFor="max_redemptions">
-                Max Uses
-              </label>
-              <input
-                type="number"
-                id="max_redemptions"
-                value={newCode.max_redemptions}
-                onChange={(e) => setNewCode({...newCode, max_redemptions: parseInt(e.target.value)})}
-                min="0"
-                placeholder="1"
-                className="w-full px-3 py-2 bg-black/30 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 transition-colors"
-              />
-              <p className="text-xs text-white/50 mt-1">Set to 0 for unlimited uses</p>
             </div>
           </div>
           
@@ -556,7 +530,7 @@ export default function AdminPanel() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-white/70">{formatDate(code.created_at)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-white/70">{formatDate(code.expires_at)}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-white/70">
-                      {code.redemption_count}/{code.max_redemptions === 0 ? '∞' : code.max_redemptions}
+                      {code.redemption_count}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${

@@ -23,10 +23,9 @@ class InviteCode(Base):
     expires_at = Column(TIMESTAMP, nullable=True)
     is_active = Column(Boolean, server_default=expression.true(), nullable=False)
     redemption_count = Column(Integer, server_default='0', nullable=False)
-    max_redemptions = Column(Integer, server_default='1', nullable=False)
     
     @classmethod
-    def generate(cls, email=None, expires_days=30, max_redemptions=1):
+    def generate(cls, email=None, expires_days=30, max_redemptions=None):
         """Generate a new invite code with secure hashing"""
         # Generate random code
         plain_code = secrets.token_urlsafe(16)
@@ -40,8 +39,7 @@ class InviteCode(Base):
         return cls(
             code_hash=code_hash,
             email=email,
-            expires_at=expires_at,
-            max_redemptions=max_redemptions
+            expires_at=expires_at
         ), plain_code
     
     @classmethod

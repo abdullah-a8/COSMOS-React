@@ -113,6 +113,23 @@ class UserService:
             logger.warning(f"Failed password verification for user: {email}")
             return None
         
+        # Check if the invite code used to create this account is still valid
+        if user.invite_code_id:
+            try:
+                # Query the invite code
+                stmt = select(InviteCode).where(InviteCode.id == user.invite_code_id)
+                result = await self.db.execute(stmt)
+                invite_code = result.scalars().first()
+                
+                # Check if the invite code is still active and not expired
+                if invite_code and (not invite_code.is_active or 
+                                   (invite_code.expires_at and invite_code.expires_at <= get_utc_now())):
+                    logger.warning(f"User login attempt with deactivated or expired invite code. User: {email}")
+                    return None
+            except Exception as e:
+                # Log the error but don't block the login - this is a secondary check
+                logger.error(f"Error checking invite code validity: {str(e)}")
+        
         # Update last login time
         user.last_login = get_utc_now()
         await self.db.commit()
@@ -142,7 +159,7 @@ class UserService:
     async def _validate_invite_code(self, code: str, email: str) -> Optional[InviteCode]:
         """
         Validate an invite code against the database.
-        The invite code must be active, not expired, not fully redeemed, and match the email.
+        The invite code must be active, not expired, and match the email.
         """
         if not code:
             return None
@@ -155,10 +172,6 @@ class UserService:
                 or_(
                     InviteCode.expires_at == None,
                     InviteCode.expires_at > get_utc_now()
-                ),
-                or_(
-                    InviteCode.max_redemptions == 0,  # Unlimited
-                    InviteCode.redemption_count < InviteCode.max_redemptions
                 )
             )
         )

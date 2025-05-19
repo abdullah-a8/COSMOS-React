@@ -22,11 +22,10 @@ def format_date(date_obj):
     except (ValueError, TypeError):
         return str(date_obj)
 
-def get_invite_code_email_html(invite_code, email, max_redemptions, expires_at, redemption_count=0):
+def get_invite_code_email_html(invite_code, email, expires_at, redemption_count=0):
     """Generate HTML for invite code email"""
     days_remaining = calculate_days_remaining(expires_at)
     formatted_expiry = format_date(expires_at)
-    uses_left = max(0, max_redemptions - redemption_count) if max_redemptions > 0 else "Unlimited"
     expiry_text = f"Expires on {formatted_expiry}" if expires_at else "Never expires"
     
     # Purple theme colors matching the COSMOS app
@@ -67,59 +66,76 @@ def get_invite_code_email_html(invite_code, email, max_redemptions, expires_at, 
                 <img src="https://cosmos.devosmic.com/cosmos_app.png" alt="COSMOS Logo" width="80" height="80" style="margin-bottom: 20px; display: inline-block;">
                 <h1 style="
                     color: {primary_dark};
-                    font-size: 28px;
-                    font-weight: 700;
-                    margin: 0 0 8px;
-                ">
-                    COSMOS
-                </h1>
-                <p style="
-                    color: #6b7280;
-                    font-size: 15px;
-                    margin: 0;
-                ">
-                    Collaborative Organized System for Multiple Operating Specialists
-                </p>
-            </div>
-            
-            <h2 style="
-                color: #111827;
-                font-size: 22px;
-                font-weight: 600;
-                margin: 32px 0 16px;
-            ">
-                Your Invitation Code
-            </h2>
-            
-            <p style="margin: 0 0 20px; color: #4b5563; font-size: 16px;">
-                You've been invited to join COSMOS. Please use the following code to access the platform:
-            </p>
-            
-            <div style="
-                background-color: #f9fafb;
-                border: 1px solid #e5e7eb;
-                border-radius: 8px;
-                margin: 24px 0;
-                padding: 24px;
-                text-align: center;
-            ">
-                <p style="
-                    color: {primary_dark};
-                    font-family: 'Courier New', monospace;
                     font-size: 26px;
                     font-weight: 700;
                     margin: 0;
                 ">
-                    {invite_code}
+                    Welcome to COSMOS
+                </h1>
+                <p style="
+                    color: #6b7280;
+                    font-size: 16px;
+                    margin: 8px 0 0;
+                ">
+                    You've been invited to join the platform
                 </p>
             </div>
             
-            <!-- Sign In Button -->
-            <div style="text-align: center; margin: 32px 0;">
-                <a href="https://cosmos.devosmic.com" style="
+            <!-- Code Display -->
+            <div style="
+                background-color: #f9fafb;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                padding: 24px;
+                margin-bottom: 24px;
+                text-align: center;
+            ">
+                <h2 style="
+                    color: #111827;
+                    font-size: 16px;
+                    font-weight: 600;
+                    margin: 0 0 12px;
+                ">
+                    Your Invite Code:
+                </h2>
+                <div style="
+                    background-color: #ffffff;
+                    border: 1px dashed #d1d5db;
+                    border-radius: 6px;
+                    color: {primary_color};
+                    font-family: 'Courier New', monospace;
+                    font-size: 20px;
+                    font-weight: 700;
+                    letter-spacing: 1px;
+                    margin: 0 auto 16px;
+                    padding: 12px 16px;
+                    text-align: center;
+                    max-width: 320px;
+                ">
+                    {invite_code}
+                </div>
+                <p style="
+                    color: #6b7280;
+                    font-size: 13px;
+                    margin: 0;
+                ">
+                    Use this code to create your account.
+                </p>
+            </div>
+            
+            <!-- Instructions -->
+            <div style="margin-bottom: 32px; text-align: center;">
+                <p style="
+                    color: #4b5563;
+                    margin: 0 0 20px;
+                ">
+                    To get started, copy your code and click the button below:
+                </p>
+                
+                <a href="https://cosmos.devosmic.com/register" style="
                     display: inline-block;
-                    padding: 14px 32px;
-                    background-color: {primary_dark};
+                    background-color: {primary_color};
+                    padding: 12px 32px;
                     color: white;
                     font-size: 16px;
                     font-weight: 600;
@@ -149,10 +165,6 @@ def get_invite_code_email_html(invite_code, email, max_redemptions, expires_at, 
             ">
                 <p style="margin: 0 0 12px; color: #4b5563;">
                     <span style="font-weight: 600; color: #374151;">Email:</span> {email or "Not specified"}
-                </p>
-                
-                <p style="margin: 0 0 12px; color: #4b5563;">
-                    <span style="font-weight: 600; color: #374151;">Allowed Uses:</span> {max_redemptions if max_redemptions > 0 else "Unlimited"}
                 </p>
                 
                 <p style="margin: 0 0 12px; color: #4b5563;">
@@ -201,11 +213,10 @@ def get_invite_code_email_html(invite_code, email, max_redemptions, expires_at, 
     
     return html
 
-def get_invite_code_email_text(invite_code, email, max_redemptions, expires_at, redemption_count=0):
+def get_invite_code_email_text(invite_code, email, expires_at, redemption_count=0):
     """Generate plain text for invite code email"""
     days_remaining = calculate_days_remaining(expires_at)
     formatted_expiry = format_date(expires_at)
-    uses_left = max(0, max_redemptions - redemption_count) if max_redemptions > 0 else "Unlimited"
     expiry_text = f"Expires on {formatted_expiry}" if expires_at else "Never expires"
     
     text = f"""
@@ -217,8 +228,6 @@ You have been invited to join COSMOS. Use the following code to access the platf
 
 Invitation Details:
 • Email: {email or "Not specified"}
-• Allowed Uses: {max_redemptions if max_redemptions > 0 else "Unlimited"}
-• Uses Remaining: {uses_left}
 • {expiry_text}
 """
     

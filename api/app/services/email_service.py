@@ -54,14 +54,13 @@ def send_email_with_resend(to_email, subject, html_content=None, text_content=No
         logger.exception(f"Failed to send email: {str(e)}")
         return {"error": str(e)}
 
-async def send_invite_code_email(to_email, invite_code, max_redemptions, expires_at, redemption_count=0):
+async def send_invite_code_email(to_email, invite_code, expires_at, redemption_count=0):
     """
     Send an email with invite code details
     
     Args:
         to_email: Recipient email address
         invite_code: The invite code
-        max_redemptions: Maximum number of redemptions allowed
         expires_at: Expiry date of the invite code
         redemption_count: Current number of redemptions (default: 0)
     
@@ -73,14 +72,12 @@ async def send_invite_code_email(to_email, invite_code, max_redemptions, expires
     html_content = get_invite_code_email_html(
         invite_code=invite_code,
         email=to_email,
-        max_redemptions=max_redemptions,
         expires_at=expires_at,
         redemption_count=redemption_count
     )
     text_content = get_invite_code_email_text(
         invite_code=invite_code,
         email=to_email,
-        max_redemptions=max_redemptions,
         expires_at=expires_at,
         redemption_count=redemption_count
     )
