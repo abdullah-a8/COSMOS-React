@@ -189,16 +189,6 @@ export default function Navbar() {
             >
               <div className="p-4 space-y-3">
                 <MenuLink 
-                  to="/dashboard" 
-                  onClick={() => setMenuOpen(false)}
-                  icon={<div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
-                    <Home className="w-4 h-4 text-white" />
-                  </div>}
-                >
-                  Dashboard
-                </MenuLink>
-                
-                <MenuLink 
                   to="/rag-chatbot" 
                   onClick={() => setMenuOpen(false)}
                   icon={<div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center">
