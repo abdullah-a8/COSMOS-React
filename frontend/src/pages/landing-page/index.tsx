@@ -1,8 +1,6 @@
-import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React from 'react';
 import { SparklesCore } from '../../components/sparkles';
 import { useDevice } from '../../hooks/useDevice';
-import { useAuth } from '../../hooks/useAuth.tsx';
 import Header from './Header';
 import Hero from './Hero.tsx';
 import Features from './Features.tsx';
@@ -12,16 +10,7 @@ import Footer from './Footer';
 
 const LandingPage: React.FC = () => {
   const { isMobile } = useDevice();
-  const { isAuthenticated } = useAuth();
-  const navigate = useNavigate();
   
-  // Redirect authenticated users to dashboard
-  useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/dashboard', { replace: true });
-    }
-  }, [isAuthenticated, navigate]);
-
   return (
     <div className="min-h-screen bg-black text-white antialiased relative overflow-x-hidden">
       {/* Ambient background with moving particles */}

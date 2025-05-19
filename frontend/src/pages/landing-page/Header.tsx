@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '../../components/ui/button';
-import { Menu, X, Star, Sparkles, Globe } from 'lucide-react';
+import { Menu, X, Star, Sparkles, Globe, User } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth.tsx';
 
 interface NavItemProps {
   to: string;
@@ -26,31 +27,28 @@ const NavItem: React.FC<NavItemProps> = ({ to, children, onClick, isScrollLink =
   };
 
   return (
-    <motion.div
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.98 }}
-      className="relative group"
-    >
+    <div className="relative group">
       <Link 
         to={to}
-        className="text-foreground hover:text-white transition-colors duration-300 px-3 py-2"
+        className="text-foreground hover:text-white transition-colors duration-300 px-3 py-2 inline-block"
         onClick={handleClick}
       >
-        {children}
+        <motion.div
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          {children}
+        </motion.div>
       </Link>
-      <motion.div 
-        className="absolute -bottom-1 left-0 right-0 h-[2px] bg-gradient-to-r from-primary to-blue-500 origin-left rounded-full"
-        initial={{ scaleX: 0 }}
-        whileHover={{ scaleX: 1 }}
-        transition={{ duration: 0.3 }}
-      />
-    </motion.div>
+      <div className="absolute bottom-0 left-0 right-0 h-[2px] w-full scale-x-0 group-hover:scale-x-100 transition-transform duration-300 bg-gradient-to-r from-primary via-indigo-400 to-purple-400 rounded-full origin-center"></div>
+    </div>
   );
 };
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const { isAuthenticated } = useAuth({ refreshInterval: 0 });
 
   // Simple scroll detection - no complex transforms that could cause issues
   useEffect(() => {
@@ -109,7 +107,7 @@ const Header: React.FC = () => {
         </div>
         
         {/* Content */}
-        <Link to="/" className="flex items-center space-x-2 z-20 group p-2 sm:p-3 relative">
+        <Link to="/" className="flex items-center space-x-2 z-20 group relative">
           <motion.div
             className="relative"
             whileHover={{ rotate: 10, scale: 1.1 }}
@@ -160,38 +158,68 @@ const Header: React.FC = () => {
         <div className="hidden md:flex items-center gap-4 lg:gap-6 py-3 pr-3 relative z-10">
           <NavItem to="#features-section" isScrollLink={true}>Features</NavItem>
           <NavItem to="#how-it-works-section" isScrollLink={true}>How It Works</NavItem>
-          <NavItem to="/docs">Docs</NavItem>
+          <NavItem to="/pricing">Pricing</NavItem>
           
           <div className="flex items-center gap-3 ml-2 lg:ml-4">
-            <Link to="/login">
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <Button variant="ghost" className="text-foreground hover:bg-indigo-500/10 transition-all duration-300">
-                  Login
-                </Button>
-              </motion.div>
-            </Link>
-            <Link to="/register">
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Button size="default" className="relative overflow-hidden bg-gradient-to-r from-primary to-blue-600 text-primary-foreground hover:opacity-90 transition-all duration-300">
-                  <motion.span
-                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-                    animate={{ x: ["120%", "-120%"] }}
-                    transition={{ 
-                      repeat: Infinity, 
-                      duration: 2,
-                      ease: "linear",
-                    }}
-                  />
-                  <span className="relative z-10">Register</span>
-                </Button>
-              </motion.div>
-            </Link>
+            {isAuthenticated ? (
+              <>
+                <Link to="/dashboard">
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <Button variant="ghost" className="text-foreground hover:bg-indigo-500/10 transition-all duration-300">
+                      Dashboard
+                    </Button>
+                  </motion.div>
+                </Link>
+                <Link to="/profile">
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Button size="default" className="relative overflow-hidden bg-gradient-to-r from-primary to-blue-600 text-primary-foreground hover:opacity-90 transition-all duration-300">
+                      <span className="relative z-10 flex items-center gap-2">
+                        Profile
+                        <User className="h-4 w-4" />
+                      </span>
+                    </Button>
+                  </motion.div>
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link to="/login">
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <Button variant="ghost" className="text-foreground hover:bg-indigo-500/10 transition-all duration-300">
+                      Login
+                    </Button>
+                  </motion.div>
+                </Link>
+                <Link to="/register">
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Button size="default" className="relative overflow-hidden bg-gradient-to-r from-primary to-blue-600 text-primary-foreground hover:opacity-90 transition-all duration-300">
+                      <motion.span
+                        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                        animate={{ x: ["120%", "-120%"] }}
+                        transition={{ 
+                          repeat: Infinity, 
+                          duration: 2,
+                          ease: "linear",
+                        }}
+                      />
+                      <span className="relative z-10">Register</span>
+                    </Button>
+                  </motion.div>
+                </Link>
+              </>
+            )}
           </div>
         </div>
         
@@ -235,20 +263,37 @@ const Header: React.FC = () => {
                 }}>
                 How It Works
               </Link>
-              <Link to="/docs" className="px-4 py-2 hover:bg-purple-500/10 rounded-lg transition-colors" onClick={() => setIsMenuOpen(false)}>
-                Docs
+              <Link to="/pricing" className="px-4 py-2 hover:bg-purple-500/10 rounded-lg transition-colors" onClick={() => setIsMenuOpen(false)}>
+                Pricing
               </Link>
               <div className="pt-2 flex flex-col gap-2 border-t border-purple-500/20">
-                <Link to="/login" onClick={() => setIsMenuOpen(false)}>
-                  <Button variant="ghost" className="w-full justify-start text-foreground hover:bg-purple-500/10">
-                    Login
-                  </Button>
-                </Link>
-                <Link to="/register" onClick={() => setIsMenuOpen(false)}>
-                  <Button className="w-full bg-gradient-to-r from-primary to-blue-600 text-primary-foreground hover:opacity-90">
-                    Register
-                  </Button>
-                </Link>
+                {isAuthenticated ? (
+                  <>
+                    <Link to="/dashboard" onClick={() => setIsMenuOpen(false)}>
+                      <Button variant="ghost" className="w-full justify-start text-foreground hover:bg-purple-500/10">
+                        Dashboard
+                      </Button>
+                    </Link>
+                    <Link to="/profile" onClick={() => setIsMenuOpen(false)}>
+                      <Button className="w-full bg-gradient-to-r from-primary to-blue-600 text-primary-foreground hover:opacity-90">
+                        Profile
+                      </Button>
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <Link to="/login" onClick={() => setIsMenuOpen(false)}>
+                      <Button variant="ghost" className="w-full justify-start text-foreground hover:bg-purple-500/10">
+                        Login
+                      </Button>
+                    </Link>
+                    <Link to="/register" onClick={() => setIsMenuOpen(false)}>
+                      <Button className="w-full bg-gradient-to-r from-primary to-blue-600 text-primary-foreground hover:opacity-90">
+                        Register
+                      </Button>
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           </motion.div>

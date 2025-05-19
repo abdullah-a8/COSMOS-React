@@ -3,8 +3,10 @@ import { Link } from 'react-router-dom';
 import { motion, useInView } from 'framer-motion';
 import { Button } from '../../components/ui/button';
 import { ArrowRight, Star, Sparkles, Rocket } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth.tsx';
 
 const CTA: React.FC = () => {
+  const { isAuthenticated } = useAuth({ refreshInterval: 0 });
   const ctaRef = useRef<HTMLDivElement>(null);
   const isInView = useInView(ctaRef, { once: false, amount: 0.3, margin: "100px" });
   
@@ -158,66 +160,107 @@ const CTA: React.FC = () => {
                 delay: 0.5
               }}
             >
-              <Link to="/register">
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.98 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 15 }}
-                >
-                  <Button size="lg" className="relative overflow-hidden bg-gradient-to-r from-primary to-blue-600 text-primary-foreground hover:opacity-90 font-medium px-8 shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all duration-300 w-full sm:w-auto">
-                    {/* Animated shine effect */}
-                    <motion.span
-                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-                      animate={{ x: ["120%", "-120%"] }}
-                      transition={{ 
-                        repeat: Infinity, 
-                        duration: 2,
-                        ease: "linear",
-                      }}
-                    />
-                    
-                    <span className="relative z-10 flex items-center">
-                      Get Started Free
+              {isAuthenticated ? (
+                <Link to="/dashboard">
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.98 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 15 }}
+                  >
+                    <Button size="lg" className="relative overflow-hidden bg-gradient-to-r from-primary to-blue-600 text-primary-foreground hover:opacity-90 font-medium px-8 shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all duration-300 w-full sm:w-auto">
+                      {/* Animated shine effect */}
+                      <motion.span
+                        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                        animate={{ x: ["120%", "-120%"] }}
+                        transition={{ 
+                          repeat: Infinity, 
+                          duration: 2,
+                          ease: "linear",
+                        }}
+                      />
                       
-                      <motion.span
-                        className="ml-2 inline-flex items-center"
-                        animate={{ x: [0, 3, 0] }}
-                        transition={{ 
-                          repeat: Infinity, 
-                          duration: 1.5,
-                          ease: "easeInOut",
-                        }}
-                      >
-                        <ArrowRight className="h-4 w-4" />
-                      </motion.span>
-                    </span>
-                  </Button>
-                </motion.div>
-              </Link>
-              
-              <Link to="/login">
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.98 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 15 }}
-                >
-                  <Button size="lg" variant="outline" className="border-white/20 bg-white/5 backdrop-blur-sm hover:bg-white/10 hover:border-white/30 transition-colors duration-300 w-full sm:w-auto">
-                    <span className="flex items-center gap-1">
-                      Sign In
-                      <motion.span
-                        animate={{ rotate: [0, 15, 0, -15, 0] }}
-                        transition={{ 
-                          repeat: Infinity, 
-                          duration: 5,
-                          ease: "easeInOut"
-                        }}
-                      >
-                        <Sparkles className="w-3 h-3 ml-1 text-primary/80" />
-                      </motion.span>
-                    </span>
-                  </Button>
-                </motion.div>
-              </Link>
+                      <span className="relative z-10 flex items-center">
+                        Go to COSMOS
+                        
+                        <motion.span
+                          className="ml-2 inline-flex items-center"
+                          animate={{ x: [0, 3, 0] }}
+                          transition={{ 
+                            repeat: Infinity, 
+                            duration: 1.5,
+                            ease: "easeInOut",
+                          }}
+                        >
+                          <ArrowRight className="h-4 w-4" />
+                        </motion.span>
+                      </span>
+                    </Button>
+                  </motion.div>
+                </Link>
+              ) : (
+                <>
+                  <Link to="/register">
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.98 }}
+                      transition={{ type: "spring", stiffness: 300, damping: 15 }}
+                    >
+                      <Button size="lg" className="relative overflow-hidden bg-gradient-to-r from-primary to-blue-600 text-primary-foreground hover:opacity-90 font-medium px-8 shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all duration-300 w-full sm:w-auto">
+                        {/* Animated shine effect */}
+                        <motion.span
+                          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                          animate={{ x: ["120%", "-120%"] }}
+                          transition={{ 
+                            repeat: Infinity, 
+                            duration: 2,
+                            ease: "linear",
+                          }}
+                        />
+                        
+                        <span className="relative z-10 flex items-center">
+                          Get Started Free
+                          
+                          <motion.span
+                            className="ml-2 inline-flex items-center"
+                            animate={{ x: [0, 3, 0] }}
+                            transition={{ 
+                              repeat: Infinity, 
+                              duration: 1.5,
+                              ease: "easeInOut",
+                            }}
+                          >
+                            <ArrowRight className="h-4 w-4" />
+                          </motion.span>
+                        </span>
+                      </Button>
+                    </motion.div>
+                  </Link>
+                  
+                  <Link to="/login">
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.98 }}
+                      transition={{ type: "spring", stiffness: 300, damping: 15 }}
+                    >
+                      <Button size="lg" variant="outline" className="border-white/20 bg-white/5 backdrop-blur-sm hover:bg-white/10 hover:border-white/30 transition-colors duration-300 w-full sm:w-auto">
+                        <span className="flex items-center gap-1">
+                          Sign In
+                          <motion.span
+                            animate={{ rotate: [0, 15, 0, -15, 0] }}
+                            transition={{ 
+                              repeat: Infinity, 
+                              duration: 5,
+                              ease: "easeInOut"
+                            }}
+                          >
+                            <Sparkles className="w-3 h-3 ml-1 text-primary/80" />
+                          </motion.span>
+                        </span>
+                      </Button>
+                    </motion.div>
+                  </Link>
+                </>
+              )}
             </motion.div>
             
             {/* Subtle badge showing number of active users */}

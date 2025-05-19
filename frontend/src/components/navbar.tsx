@@ -59,7 +59,7 @@ export default function Navbar() {
         </div>
         
         {/* Logo */}
-        <Link to={isAuthenticated ? "/dashboard" : "/"} className="flex items-center space-x-2 z-20 group relative">
+        <Link to="/" className="flex items-center space-x-2 z-20 group relative">
           <motion.div
             className="relative"
             whileHover={{ rotate: 10, scale: 1.1 }}
@@ -189,6 +189,16 @@ export default function Navbar() {
             >
               <div className="p-4 space-y-3">
                 <MenuLink 
+                  to="/dashboard" 
+                  onClick={() => setMenuOpen(false)}
+                  icon={<div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
+                    <Home className="w-4 h-4 text-white" />
+                  </div>}
+                >
+                  Dashboard
+                </MenuLink>
+                
+                <MenuLink 
                   to="/rag-chatbot" 
                   onClick={() => setMenuOpen(false)}
                   icon={<div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-blue-600 flex items-center justify-center">
@@ -216,6 +226,56 @@ export default function Navbar() {
                   </div>}
                 >
                   Gmail Responder
+                </MenuLink>
+
+                <MenuLink 
+                  to="/" 
+                  onClick={() => setMenuOpen(false)}
+                  icon={<div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center">
+                    <Sparkles className="w-4 h-4 text-white" />
+                  </div>}
+                >
+                  Landing Page
+                </MenuLink>
+
+                <MenuLink 
+                  to="/pricing" 
+                  onClick={() => setMenuOpen(false)}
+                  icon={<div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center">
+                    <Sparkles className="w-4 h-4 text-white" />
+                  </div>}
+                >
+                  Pricing
+                </MenuLink>
+
+                <MenuLink 
+                  to="/about" 
+                  onClick={() => setMenuOpen(false)}
+                  icon={<div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center">
+                    <Sparkles className="w-4 h-4 text-white" />
+                  </div>}
+                >
+                  About
+                </MenuLink>
+
+                <MenuLink 
+                  to="/terms" 
+                  onClick={() => setMenuOpen(false)}
+                  icon={<div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                    <Sparkles className="w-4 h-4 text-white" />
+                  </div>}
+                >
+                  Terms of Service
+                </MenuLink>
+
+                <MenuLink 
+                  to="/privacy-policy" 
+                  onClick={() => setMenuOpen(false)}
+                  icon={<div className="w-9 h-9 rounded-full bg-gradient-to-br from-green-500 to-blue-600 flex items-center justify-center">
+                    <Sparkles className="w-4 h-4 text-white" />
+                  </div>}
+                >
+                  Privacy Policy
                 </MenuLink>
                 
                 {isAdmin && (

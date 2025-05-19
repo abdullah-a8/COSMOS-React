@@ -4,8 +4,10 @@ import { motion, AnimatePresence, useInView, useAnimation } from 'framer-motion'
 import { Button } from '../../components/ui/button';
 import { Bot, ArrowRight, Sparkles } from 'lucide-react';
 import { itemVariants } from './AnimationVariants';
+import { useAuth } from '../../hooks/useAuth.tsx';
 
 const Hero: React.FC = () => {
+  const { isAuthenticated } = useAuth({ refreshInterval: 0 });
   const heroRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const controls = useAnimation();
@@ -126,40 +128,67 @@ const Hero: React.FC = () => {
             </motion.p>
             
             <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto justify-center">
-              <Link to="/register" className="w-full sm:w-auto">
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.98 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                  className="w-full sm:w-auto"
-                >
-                  <Button size="lg" className="relative overflow-hidden bg-gradient-to-r from-primary to-blue-600 text-primary-foreground hover:opacity-90 font-medium px-8 shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all duration-300 w-full sm:w-auto">
-                    <motion.span
-                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-                      animate={{ x: ["120%", "-120%"] }}
-                      transition={{ 
-                        repeat: Infinity, 
-                        duration: 2,
-                        ease: "linear",
-                      }}
-                    />
-                    Get Started Free
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </motion.div>
-              </Link>
-              <Link to="/login" className="w-full sm:w-auto">
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.98 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                  className="w-full sm:w-auto"
-                >
-                  <Button size="lg" variant="outline" className="border-white/20 bg-white/5 backdrop-blur-sm hover:bg-white/10 hover:border-white/30 transition-colors duration-300 w-full sm:w-auto">
-                    <span>Sign In</span>
-                  </Button>
-                </motion.div>
-              </Link>
+              {isAuthenticated ? (
+                <Link to="/dashboard" className="w-full sm:w-auto">
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.98 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                    className="w-full sm:w-auto"
+                  >
+                    <Button size="lg" className="relative overflow-hidden bg-gradient-to-r from-primary to-blue-600 text-primary-foreground hover:opacity-90 font-medium px-8 shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all duration-300 w-full sm:w-auto">
+                      <motion.span
+                        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                        animate={{ x: ["120%", "-120%"] }}
+                        transition={{ 
+                          repeat: Infinity, 
+                          duration: 2,
+                          ease: "linear",
+                        }}
+                      />
+                      Go to COSMOS
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </motion.div>
+                </Link>
+              ) : (
+                <>
+                  <Link to="/register" className="w-full sm:w-auto">
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.98 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                      className="w-full sm:w-auto"
+                    >
+                      <Button size="lg" className="relative overflow-hidden bg-gradient-to-r from-primary to-blue-600 text-primary-foreground hover:opacity-90 font-medium px-8 shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all duration-300 w-full sm:w-auto">
+                        <motion.span
+                          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                          animate={{ x: ["120%", "-120%"] }}
+                          transition={{ 
+                            repeat: Infinity, 
+                            duration: 2,
+                            ease: "linear",
+                          }}
+                        />
+                        Get Started Free
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    </motion.div>
+                  </Link>
+                  <Link to="/login" className="w-full sm:w-auto">
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.98 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                      className="w-full sm:w-auto"
+                    >
+                      <Button size="lg" variant="outline" className="border-white/20 bg-white/5 backdrop-blur-sm hover:bg-white/10 hover:border-white/30 transition-colors duration-300 w-full sm:w-auto">
+                        <span>Sign In</span>
+                      </Button>
+                    </motion.div>
+                  </Link>
+                </>
+              )}
             </motion.div>
           </motion.div>
         </AnimatePresence>

@@ -19,6 +19,7 @@ import { useEffect, useState } from 'react';
 import TermsOfService from './pages/policy/TermsOfService';
 import PrivacyPolicy from './pages/policy/PrivacyPolicy';
 import About from './pages/policy/About';
+import PricingPage from './pages/pricing';
 
 // Protected route component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -118,6 +119,8 @@ function App() {
   const { isAuthenticated } = useAuth({ refreshInterval: 45 });
   const isAuthPage = ['/auth', '/login', '/register'].includes(location.pathname);
   const isLandingPage = location.pathname === '/';
+  const isPricingPage = location.pathname === '/pricing';
+  const isPublicPage = isLandingPage || isPricingPage || ['/terms', '/privacy-policy', '/about'].includes(location.pathname);
   
   // Check if we're in production environment
   const [isProduction, setIsProduction] = useState(false);
@@ -130,6 +133,19 @@ function App() {
       setIsProduction(true);
     }
   }, []);
+
+  // Clear any cached redirects
+  useEffect(() => {
+    // Clear any cached redirects that might be causing issues
+    if (location.pathname === '/pricing') {
+      // We're attempting to access the pricing page, make sure we don't get redirected
+      sessionStorage.removeItem('auth_redirect_count');
+      // Force location path to stay at pricing if that's what we requested
+      if (history && history.replaceState) {
+        history.replaceState(null, '', '/pricing');
+      }
+    }
+  }, [location.pathname]);
   
   // Redirect from /auth to /login in production
   useEffect(() => {
@@ -198,18 +214,19 @@ function App() {
       </div>
 
       <div className="relative z-10 min-h-screen flex flex-col overflow-x-hidden">
-        {/* Only show navbar if not on auth page or landing page and authenticated */}
-        {!isAuthPage && !isLandingPage && isAuthenticated && <Navbar />}
+        {/* Only show navbar on protected pages, not on auth or public pages */}
+        {!isAuthPage && !isPublicPage && isAuthenticated && <Navbar />}
         
         <div className="flex-1 flex flex-col">
           <Routes>
-            {/* Landing Page */}
+            {/* Landing Page - Now accessible to all users */}
             <Route path="/" element={<LandingPage />} />
 
-            {/* Policy pages */}
+            {/* Policy pages - accessible to everyone */}
             <Route path="/terms" element={<TermsOfService />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/about" element={<About />} />
+            <Route path="/pricing" element={<PricingPage />} />
 
             {/* Primary authentication routes - must always be accessible */}
             <Route path="/login" element={<LoginPage />} />
@@ -250,15 +267,15 @@ function App() {
               </AdminRoute>
             } />
             
-            {/* Redirect unauthenticated users to landing page for unknown routes */}
+            {/* Redirect unmatched routes */}
             <Route path="*" element={
               isAuthenticated ? <Navigate to="/dashboard" replace /> : <Navigate to="/" replace />
             } />
           </Routes>
         </div>
 
-        {/* Animated robot - Only shown on non-auth pages and non-landing page and non-mobile devices when authenticated */}
-        {!isAuthPage && !isLandingPage && !isMobile && isAuthenticated && (
+        {/* Animated robot - Only shown on authenticated pages except landing and policy pages */}
+        {!isAuthPage && !isPublicPage && !isMobile && isAuthenticated && (
           <div className="fixed bottom-4 right-4 w-64 h-64 z-10 pointer-events-none">
             <RoboAnimation />
           </div>
