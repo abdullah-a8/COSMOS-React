@@ -20,7 +20,8 @@ class UserService:
         email: str, 
         password: str, 
         invite_code: str, 
-        display_name: str
+        display_name: str,
+        terms_accepted: bool
     ) -> Tuple[Optional[User], str]:
         """
         Create a new user account with an invite code.
@@ -37,6 +38,11 @@ class UserService:
                 logger.warning(f"Attempt to create user with existing email: {email}")
                 return None, "email_exists"
             
+            # Check if terms were accepted
+            if not terms_accepted:
+                logger.warning(f"Attempt to create user without accepting terms: {email}")
+                return None, "terms_not_accepted"
+            
             # Next, validate the invite code
             invite = await self._validate_invite_code(invite_code, email)
             if not invite:
@@ -52,6 +58,7 @@ class UserService:
             # Create the user
             user = User.create_user(email, password, display_name)
             user.invite_code_id = invite.id
+            user.terms_accepted = terms_accepted
             
             # Update invite code usage
             invite.redemption_count += 1

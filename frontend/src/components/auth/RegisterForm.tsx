@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useCsrf } from '../../hooks/useCsrf';
+import { Link } from 'react-router-dom';
 
 interface RegisterFormProps {
   onSuccess: () => void;
@@ -67,6 +68,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onError }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const { csrfToken } = useCsrf();
 
   // Calculate password strength whenever password changes
@@ -128,6 +130,11 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onError }) => {
     // Form validation
     if (!email || !password || !confirmPassword || !inviteCode || !displayName) {
       onError('All fields are required');
+      return;
+    }
+    
+    if (!termsAccepted) {
+      onError('You must agree to the Terms of Service and Privacy Policy');
       return;
     }
     
@@ -209,6 +216,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onError }) => {
           confirm_password: confirmPassword,
           display_name: displayName || undefined,
           invite_code: inviteCode,
+          terms_accepted: termsAccepted,
           csrf_token: csrfToken, // Also include in the body for flexibility
         }),
         credentials: 'include', // Important for cookies
@@ -508,6 +516,39 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onError }) => {
             className="w-full px-4 py-3 bg-black/50 border border-white/20 focus:border-purple-500/60 hover:border-purple-500/40 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-500/20 disabled:opacity-50 transition-all duration-200 rounded-lg"
           />
           <div className="absolute inset-0 pointer-events-none rounded-lg transition-opacity duration-300 opacity-0 group-focus-within:opacity-100" style={{ background: 'linear-gradient(90deg, rgba(139, 92, 246, 0) 0%, rgba(139, 92, 246, 0.1) 100%)' }}></div>
+        </div>
+      </motion.div>
+      
+      {/* Terms and Privacy Policy Checkbox */}
+      <motion.div
+        className="group"
+        variants={inputVariants}
+      >
+        <div className="relative flex items-start mt-2">
+          <div className="flex items-center h-5">
+            <input
+              id="termsAccepted"
+              name="termsAccepted"
+              type="checkbox"
+              checked={termsAccepted}
+              onChange={(e) => setTermsAccepted(e.target.checked)}
+              disabled={isLoading}
+              required
+              className="h-4 w-4 rounded bg-black/70 border-white/30 text-purple-600 focus:ring-purple-500/50 focus:ring-offset-0 focus:outline-none focus:ring-2 cursor-pointer disabled:opacity-50 transition-all duration-200"
+            />
+          </div>
+          <div className="ml-3 text-sm">
+            <label htmlFor="termsAccepted" className="font-medium text-white/70 cursor-pointer">
+              I agree to the{" "}
+              <Link to="/terms" className="text-purple-400 hover:text-purple-300 underline">
+                Terms of Service
+              </Link>{" "}
+              and{" "}
+              <Link to="/privacy" className="text-purple-400 hover:text-purple-300 underline">
+                Privacy Policy
+              </Link>
+            </label>
+          </div>
         </div>
       </motion.div>
       

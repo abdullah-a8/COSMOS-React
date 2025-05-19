@@ -57,12 +57,17 @@ async def register_user(
     """Register a new user with an invite code."""
     user_service = UserService(db)
     
+    # Log terms acceptance
+    logger = logging.getLogger(__name__)
+    logger.info(f"User registration with terms accepted: {user_data.email}")
+    
     # Create user with invite code
     user, error = await user_service.create_user_with_invite(
         email=user_data.email,
         password=user_data.password,
         invite_code=user_data.invite_code,
-        display_name=user_data.display_name
+        display_name=user_data.display_name,
+        terms_accepted=user_data.terms_accepted
     )
     
     if not user:
@@ -80,6 +85,11 @@ async def register_user(
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="This password has appeared in a data breach. Please choose a different password for security."
+            )
+        elif error == "terms_not_accepted":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="You must accept the Terms of Service and Privacy Policy"
             )
         else:
             raise HTTPException(

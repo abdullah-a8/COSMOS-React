@@ -9,6 +9,15 @@ class UserCreate(BaseModel):
     confirm_password: str
     display_name: str = Field(..., min_length=3, max_length=100)
     invite_code: str
+    terms_accepted: bool = Field(...)
+    
+    @field_validator('terms_accepted')
+    @classmethod
+    def terms_must_be_accepted(cls, v):
+        """Validate that terms and privacy policy have been accepted."""
+        if not v:
+            raise ValueError('You must accept the Terms of Service and Privacy Policy')
+        return v
     
     @field_validator('confirm_password')
     @classmethod

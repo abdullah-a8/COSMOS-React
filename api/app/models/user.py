@@ -18,12 +18,13 @@ class User(Base):
     updated_at = Column(TIMESTAMP, onupdate=func.now())
     last_login = Column(TIMESTAMP, nullable=True)
     is_active = Column(Boolean, server_default=expression.true(), nullable=False)
+    terms_accepted = Column(Boolean, server_default=expression.false(), nullable=False)
     
     # Relationship to invite code
     invite_code_id = Column(Integer, ForeignKey("invite_codes.id"), nullable=True)
     
     @classmethod
-    def create_user(cls, email: str, password: str, display_name: Optional[str] = None) -> "User":
+    def create_user(cls, email: str, password: str, display_name: Optional[str] = None, terms_accepted: bool = False) -> "User":
         """Create a new user with securely hashed password and generated access_key."""
         import uuid
         
@@ -37,7 +38,8 @@ class User(Base):
             email=email.lower(),
             display_name=display_name,
             access_key=access_key,
-            password_hash=password_hash
+            password_hash=password_hash,
+            terms_accepted=terms_accepted
         )
     
     def verify_password(self, password: str) -> bool:
