@@ -1,7 +1,7 @@
 """Add terms_accepted to users table
 
 Revision ID: b5a01c47e89f
-Revises: a75e2c12f845
+Revises: aef23c0bd792
 Create Date: 2025-05-20 14:30:00.000000
 
 """
