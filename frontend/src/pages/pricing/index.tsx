@@ -7,6 +7,8 @@ import { Button } from '../../components/ui/button';
 import { Shield, CheckCircle, XCircle, Sparkles, Info, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../components/ui/tooltip';
+import { useAuth } from '../../hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 
 // Feature item component for the pricing cards
 const FeatureItem = ({ included, text, tooltip }: { included: boolean; text: string; tooltip?: string }) => (
@@ -84,11 +86,27 @@ const AnimatedButton = ({ children, isPrimary = false, onClick }: { children: Re
 
 const PricingPage: React.FC = () => {
   const { isMobile } = useDevice();
+  const { isAuthenticated } = useAuth({ refreshInterval: 0 });
+  const navigate = useNavigate();
 
   const handleUpgradeClick = () => {
-    // For now, just log a message - no actual payment processing
-    console.log('Upgrade to Pro button clicked - payment integration removed');
-    alert('Payment integration is currently being updated. Please check back later.');
+    if (isAuthenticated) {
+      // Open checkout link in a new tab if user is logged in
+      window.open('https://cosmos.lemonsqueezy.com/buy/0a3c684d-1063-4c75-9f92-4e63772695d8', '_blank');
+    } else {
+      // Redirect to login page if not logged in
+      navigate('/login');
+    }
+  };
+
+  const handleFreeClick = () => {
+    if (isAuthenticated) {
+      // Redirect to dashboard if logged in
+      navigate('/dashboard');
+    } else {
+      // Redirect to login page if not logged in
+      navigate('/login');
+    }
   };
 
   return (
@@ -180,7 +198,7 @@ const PricingPage: React.FC = () => {
                   </div>
                   
                   <div className="mt-auto">
-                    <AnimatedButton>Get Started Free</AnimatedButton>
+                    <AnimatedButton onClick={handleFreeClick}>Get Started Free</AnimatedButton>
                   </div>
                 </div>
               </motion.div>
