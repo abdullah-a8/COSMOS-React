@@ -91,12 +91,20 @@ These extensions are built using pybind11 for seamless Python integration and im
   - **`models/`**: Pydantic data models
   - **`services/`**: Business logic implementations
   - **`utils/`**: Helper functions and utilities
+  - **`workers/`**: Background task workers for handling async operations
+  - **`schemas/`**: Request and response schemas
+  - **`db/`**: Database models and connection management
+  - **`email_templates/`**: Templates for email notifications
 
 - **Frontend (`frontend/`)**: 
-  - Built with React + Vite
-  - Uses Radix UI components
-  - TailwindCSS for styling
-  - TypeScript for type safety
+  - Built with React 19.0.0 + Vite 6.2.0
+  - Uses Radix UI components for accessible UI elements
+  - TailwindCSS 3.4.17 for styling
+  - TypeScript 5.7.2 for type safety
+  - State management with Zustand 5.0.4
+  - Routing with React Router 7.5.0
+  - Form handling with React Hook Form 7.53.0
+  - UI animations with Framer Motion 11.18.2
 
 ### Data Flow (RAG Example)
 
@@ -229,10 +237,10 @@ These extensions are built using pybind11 for seamless Python integration and im
     ```bash
     cd frontend
     npm install --legacy-peer-deps 
-    # To run the development server (usually on http://localhost:3000):
-    # npm run dev
+    # To run the development server (usually on http://localhost:5173):
+    npm run dev
     # To build the static assets:
-    # npm run build
+    npm run build
     cd ..
     ```
 
@@ -309,7 +317,7 @@ These extensions are built using pybind11 for seamless Python integration and im
 
 ### Running the Application
 
-The application consists of a React frontend, a FastAPI backend, and a standalone Streamlit page for the Gmail agent.
+The application consists of a React frontend and a FastAPI backend.
 
 1.  **Start the Backend API**:
     Navigate to the project root directory in your terminal. Run the Uvicorn server:
@@ -324,7 +332,7 @@ The application consists of a React frontend, a FastAPI backend, and a standalon
     cd frontend
     npm run dev
     ```
-    This will open the application in your default web browser, typically at `http://localhost:5173`. Access the RAG Chatbot and YouTube Processor here.
+    This will start the application, typically at `http://localhost:5173`. The React frontend includes all features: RAG Chatbot, YouTube Processor, and Gmail Agent.
 
 3.  **Run the Gmail Agent (Streamlit)**:
     Open *another* new terminal window/tab, ensure your virtual environment is activated, and run the specific Streamlit page:
@@ -354,18 +362,18 @@ The application consists of a React frontend, a FastAPI backend, and a standalon
 
 ### Using the Gmail Assistant
 
-1.  Navigate to the **Gmail Agent** page via the Streamlit URL.
+1.  Navigate to the **Gmail Agent** page in the React frontend.
 2.  **Authenticate**: If not already connected, click "Connect to Gmail" and follow the Google authentication flow.
 3.  **Fetch Emails**: Use the search query input (default `is:unread`) and adjust the maximum results slider, then click "Fetch Emails".
-4.  **Select Email**: Choose an email from the dropdown list in the sidebar.
+4.  **Select Email**: Choose an email from the dropdown list.
 5.  **Analyze**:
-    - Click **Classify Email** to get an AI-determined category.
-    - Click **Summarize Email** to generate a concise summary.
+    - View the AI-determined category classification.
+    - Read the generated concise summary.
 6.  **Generate Reply**:
     - Select the desired tone, style, and length for the reply.
     - Add any specific instructions or context in the "Optional Context" box.
     - Click **Generate Draft Reply**.
-7.  **Edit & Send**: Review the generated draft in the text area. Make any necessary edits, then click **Send Reply**. The email will be sent using your Gmail account, and the original email will be marked as read.
+7.  **Edit & Send**: Review the generated draft. Make any necessary edits, then click **Send Reply**. The email will be sent using your Gmail account, and the original email will be marked as read.
 
 ### Authentication & Admin Panel
 
@@ -391,9 +399,10 @@ The prompts used for RAG, email classification, summarization, and reply generat
 
 The modular structure (`core/agents/`) is designed for extension. To add a new agent (e.g., a Calendar Agent):
 1. Create a new logic file (e.g., `core/agents/calendar_logic.py`) containing the core functionality (API interaction, processing logic).
-2. Create a new Streamlit page (e.g., `pages/4_Calendar_Agent.py`) for the UI, importing functions from your new logic file.
-3. Add necessary dependencies to `requirements.txt`.
-4. Update environment variables (`.env`) and configuration (`config/`) if needed.
+2. Add a new frontend component in the React application.
+3. Create new API endpoints in the FastAPI backend to handle the agent's functionality.
+4. Add necessary dependencies to `requirements.txt`.
+5. Update environment variables (`.env`) and configuration (`config/`) if needed.
 
 ### Authentication System Configuration
 
@@ -434,6 +443,16 @@ When an invite code is generated, recipients will automatically receive a styled
 COSMOS/
 ├── frontend/               # React frontend built with Vite & TypeScript
 │   ├── src/                # Source code
+│   │   ├── assets/         # Static assets (images, icons)
+│   │   ├── components/     # Reusable UI components
+│   │   ├── hooks/          # Custom React hooks
+│   │   ├── lib/            # Utility libraries and functions
+│   │   ├── pages/          # Page components
+│   │   ├── store/          # Zustand state management
+│   │   ├── styles/         # CSS and styling files
+│   │   ├── utils/          # Helper functions
+│   │   ├── App.tsx         # Main application component
+│   │   └── main.tsx        # Application entry point 
 │   ├── dist/               # Build output
 │   ├── public/             # Static assets
 │   └── package.json        # Frontend dependencies
@@ -444,15 +463,19 @@ COSMOS/
 │   │   ├── routers/        # API endpoints
 │   │   ├── models/         # Pydantic data models
 │   │   ├── services/       # Business logic
-│   │   └── utils/          # Helper functions
+│   │   ├── core/           # Authentication and security
+│   │   ├── db/             # Database models and connection
+│   │   ├── schemas/        # Request/response schemas
+│   │   ├── utils/          # Helper functions
+│   │   ├── workers/        # Background task workers
+│   │   └── email_templates/# Email notification templates
 │   ├── scripts/            # Setup and maintenance scripts
 │   │   └── setup_auth.py   # Authentication system setup
 │   ├── migrations/         # Alembic database migrations
 │   ├── requirements.txt    # API-specific dependencies
 │   └── alembic.ini         # Alembic configuration
-├── pages/
-│   └── 3_Gmail_Agent.py    # UI for Gmail integration (Streamlit)
-├── core/
+├── pages/                  # Legacy Streamlit pages (deprecated)
+├── core/                   # Core application logic 
 │   ├── chain.py            # LangChain setup for LLM interaction (RAG)
 │   ├── data_extraction.py  # Functions for extracting text from sources
 │   ├── processing.py       # Text chunking and metadata enrichment logic
@@ -461,12 +484,12 @@ COSMOS/
 │   └── agents/
 │       └── gmail_logic.py  # Core logic for Gmail agent
 ├── cpp_extensions/         # C++ performance modules
-│   ├── text_chunking/
-│   ├── pdf_extraction/
-│   ├── hash_generation/
+│   ├── text_chunking/      # Fast text chunking implementation
+│   ├── pdf_extraction/     # Optimized PDF parsing
+│   ├── hash_generation/    # Efficient content hashing
 │   ├── setup.py            # Build script for C++ extensions
-│   └── CMakeLists.txt
-├── config/
+│   └── CMakeLists.txt      # CMake configuration
+├── config/                 # Application configuration
 │   ├── settings.py         # Default application settings
 │   └── prompts.py          # Prompt templates
 ├── credentials/            # Directory for credentials (token, .json)
@@ -490,6 +513,7 @@ The project is configured for deployment on Heroku with the following setup:
 -   **`package.json` (root level)**:
     -   The `heroku-postbuild` script handles the frontend build process on Heroku after dependencies are installed.
 -   **Python Version**: The `.python-version` file (containing `3.13`) helps ensure Heroku uses the correct Python runtime.
+-   **`.slugignore`**: Specifies files to exclude from the Heroku slug to reduce its size.
 
 To deploy:
 1.  Create a Heroku app: `heroku create your-app-name`
@@ -532,6 +556,17 @@ To deploy:
 - Verify `ADMIN_EMAILS` matches the email used for the invite code
 - The email must match exactly (case-insensitive)
 
+## Current Development Status
+
+The project has fully transitioned to a React/FastAPI architecture:
+
+- ✅ **React Frontend**: Modern UI built with React 19, Vite 6, and Radix UI components
+- ✅ **FastAPI Backend**: High-performance API endpoints with comprehensive authentication
+- ✅ **C++ Performance Extensions**: Optional modules providing significant speed improvements for core operations
+- ✅ **RAG Chatbot**: Fully functional with multiple model support and adaptive retrieval
+- ✅ **YouTube Processor**: Complete implementation with transcript extraction and processing
+- ✅ **Authentication System**: Robust invite-code based system with admin capabilities
+
 ## License
 
 This project is licensed under the MIT License. See the `LICENSE` file for details.
@@ -550,6 +585,9 @@ This project is licensed under the MIT License. See the `LICENSE` file for detai
 -   Cryptographic operations via [OpenSSL](https://www.openssl.org/).
 -   Authentication system built with [SQLAlchemy](https://www.sqlalchemy.org/) and [PostgreSQL](https://www.postgresql.org/).
 -   Database migrations managed by [Alembic](https://alembic.sqlalchemy.org/).
+-   UI components from [Radix UI](https://www.radix-ui.com/).
+-   Styling with [TailwindCSS](https://tailwindcss.com/).
+-   Email notifications via [Resend](https://resend.com/).
 
 ## Application Transition Status
 
@@ -558,6 +596,7 @@ The application has transitioned from Streamlit to a React frontend with a FastA
 - ✅ **React Frontend (`frontend/`)**: Provides the UI for the Home page, RAG Chatbot, and YouTube Processor.
 - ✅ **FastAPI Backend (`api/`)**: Serves the frontend and handles core logic execution for React components.
 - ✅ **Authentication System**: Provides secure access control with admin capabilities and invite code management.
-- ⏳ **Gmail Agent (`pages/3_Gmail_Agent.py`)**: Still uses the original Streamlit UI and will be ported to React/FastAPI in the future.
+- ⏳ **Gmail Agent (`pages/3_Gmail_Agent.py`)**: Still uses the original Streamlit UI and will be ported to React/
+FastAPI in the future.
 
 The `streamlit` dependency remains in `requirements.txt` solely for the Gmail Agent page.

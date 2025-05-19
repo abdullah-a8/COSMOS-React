@@ -68,6 +68,7 @@ export default function AdminPanel() {
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
+  const [expiryError, setExpiryError] = useState<string | null>(null);
   
   // We'll keep the ref for backward compatibility, but we'll primarily use the store
   const dataCache = useRef<DataCache<InviteCode> | null>(null);
@@ -78,7 +79,7 @@ export default function AdminPanel() {
 
   // Email validation function
   const validateEmail = (email: string) => {
-    if (!email) return true; // Email is optional, so empty is valid
+    if (!email) return false; // Email is required
     return EMAIL_REGEX.test(email);
   };
 
@@ -87,10 +88,27 @@ export default function AdminPanel() {
     const email = e.target.value;
     setNewCode({...newCode, email});
     
-    if (email && !validateEmail(email)) {
+    if (!email) {
+      setEmailError('Email is required');
+    } else if (!validateEmail(email)) {
       setEmailError('Please enter a valid email address');
     } else {
       setEmailError(null);
+    }
+  };
+
+  // Handle expiry days input change with validation
+  const handleExpiryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const days = value ? parseInt(value) : null;
+    setNewCode({...newCode, expires_days: days});
+    
+    if (days === null) {
+      setExpiryError('Expiry days is required');
+    } else if (days < 0) {
+      setExpiryError('Expiry days must be a positive number or zero');
+    } else {
+      setExpiryError(null);
     }
   };
 
@@ -211,19 +229,51 @@ export default function AdminPanel() {
     fetchInviteCodes(false);
   }, [fetchInviteCodes]);
 
+  // Effect to clear emailError after 6 seconds
+  useEffect(() => {
+    if (emailError) {
+      const timer = setTimeout(() => {
+        setEmailError(null);
+      }, 6000); // 6 seconds
+      
+      return () => clearTimeout(timer);
+    }
+  }, [emailError]);
+  
+  // Effect to clear expiryError after 6 seconds
+  useEffect(() => {
+    if (expiryError) {
+      const timer = setTimeout(() => {
+        setExpiryError(null);
+      }, 6000); // 6 seconds
+      
+      return () => clearTimeout(timer);
+    }
+  }, [expiryError]);
+
   const createInviteCode = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate email before submission if it's not empty
-    if (newCode.email && !validateEmail(newCode.email)) {
+    // Validate both fields are filled
+    let hasErrors = false;
+    
+    if (!newCode.email) {
+      setEmailError('Email is required');
+      hasErrors = true;
+    } else if (!validateEmail(newCode.email)) {
       setEmailError('Please enter a valid email address');
-      return;
+      hasErrors = true;
     }
     
-    // Validate expires_days
-    if (newCode.expires_days !== null && newCode.expires_days < 0) {
-      setError('Expiration days must be a positive number or zero');
-      storeSetError('Expiration days must be a positive number or zero');
+    if (newCode.expires_days === null) {
+      setExpiryError('Expiry days is required');
+      hasErrors = true;
+    } else if (newCode.expires_days < 0) {
+      setExpiryError('Expiry days must be a positive number or zero');
+      hasErrors = true;
+    }
+    
+    if (hasErrors) {
       return;
     }
     
@@ -231,6 +281,7 @@ export default function AdminPanel() {
     setError(null);
     storeSetError(null);
     setEmailError(null);
+    setExpiryError(null);
     setGeneratedCode(null);
     
     try {
@@ -365,7 +416,7 @@ export default function AdminPanel() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-white/70 mb-1" htmlFor="email">
-                Email (Optional)
+                Email
               </label>
               <input
                 type="email"
@@ -388,19 +439,22 @@ export default function AdminPanel() {
                 type="number"
                 id="expires_days"
                 value={newCode.expires_days || ''}
-                onChange={(e) => setNewCode({...newCode, expires_days: parseInt(e.target.value) || null})}
+                onChange={handleExpiryChange}
                 min="0"
                 placeholder="30"
-                className="w-full px-3 py-2 bg-black/30 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 transition-colors"
+                className={`w-full px-3 py-2 bg-black/30 border ${expiryError ? 'border-red-500' : 'border-white/20'} rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-1 ${expiryError ? 'focus:ring-red-500 focus:border-red-500' : 'focus:ring-purple-500 focus:border-purple-500'} transition-colors`}
               />
               <p className="text-xs text-white/50 mt-1">Set to 0 for never expires</p>
+              {expiryError && (
+                <p className="text-xs text-red-400 mt-1">{expiryError}</p>
+              )}
             </div>
           </div>
           
           <div className="flex items-center justify-end space-x-3">
             <button
               type="submit"
-              disabled={isGenerating || !!emailError}
+              disabled={isGenerating || !!emailError || !!expiryError}
               className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-medium rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_15px_rgba(147,51,234,0.3)] hover:shadow-[0_0_20px_rgba(147,51,234,0.4)]"
             >
               {isGenerating ? (
