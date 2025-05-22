@@ -1,6 +1,6 @@
 import React from 'react';
-import { Bot } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import cosmosLogo from '../../assets/cosmos_3d.png';
 
 const Footer: React.FC = () => {
   return (
@@ -8,7 +8,7 @@ const Footer: React.FC = () => {
       <div className="container mx-auto">
         <div className="flex flex-col md:flex-row justify-between items-center mb-6">
           <div className="flex items-center space-x-2 mb-4 md:mb-0">
-            <Bot className="w-5 h-5 text-primary" />
+            <img src={cosmosLogo} alt="COSMOS Logo" className="w-8 h-8 object-contain" />
             <span className="text-foreground font-semibold font-heading">COSMOS</span>
           </div>
           

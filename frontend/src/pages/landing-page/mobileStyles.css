@@ -1,0 +1,8 @@
+/* Mobile optimization styles */
+@media (max-width: 767px) {
+  /* Enhanced background when particles are disabled */
+  .bg-gradient-mobile {
+    background: radial-gradient(ellipse at center, rgba(55, 48, 163, 0.2), rgba(0, 0, 0, 0.6)) !important;
+    opacity: 1 !important;
+  }
+}

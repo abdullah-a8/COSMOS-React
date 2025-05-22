@@ -8,6 +8,8 @@ import HowItWorks from './HowItWorks';
 import CTA from './CTA';
 import Footer from './Footer';
 import ResourcePreloader from './ResourcePreloader';
+import MobileOptimizer from './MobileOptimizer';
+import './mobileStyles.css';
 import { 
   optimizeAnimatedElements, 
   forceRepaint, 
@@ -35,36 +37,43 @@ const LandingPageContent: React.FC = () => {
   }, []);
   
   return (
-    <div ref={containerRef} className="min-h-screen bg-black text-white antialiased relative overflow-x-hidden">
-      {/* Ambient background with moving particles */}
-      <div className="fixed inset-0 z-0 bg-[radial-gradient(ellipse_at_center,rgba(55,48,163,0.15),rgba(0,0,0,0.5))]">
-        <SparklesCore
-          id="tsparticlesfullpage"
-          background="transparent"
-          minSize={0.6}
-          maxSize={1.4}
-          particleDensity={isMobile ? 60 : 100}
-          className="w-full h-full"
-          particleColor="#FFFFFF"
-          followMouse={false}
-        />
-      </div>
+    <MobileOptimizer 
+      priority={isMobile ? 'high' : 'medium'}
+    >
+      <div ref={containerRef} className="min-h-screen bg-black text-white antialiased relative overflow-x-hidden">
+        {/* Ambient background with moving particles - only shown on desktop */}
+        <div className={`fixed inset-0 z-0 bg-[radial-gradient(ellipse_at_center,rgba(55,48,163,0.15),rgba(0,0,0,0.5))] ${isMobile ? 'bg-gradient-mobile' : ''}`}>
+          {/* SparklesCore is only rendered on desktop devices */}
+          {!isMobile && (
+            <SparklesCore
+              id="tsparticlesfullpage"
+              background="transparent"
+              minSize={0.6}
+              maxSize={1.4}
+              particleDensity={100}
+              className="w-full h-full"
+              particleColor="#FFFFFF"
+              followMouse={false}
+            />
+          )}
+        </div>
 
-      <Header />
-      <div id="hero-section" className="motion-element">
-        <Hero />
+        <Header />
+        <div id="hero-section" className="motion-element">
+          <Hero />
+        </div>
+        <div id="features-section" className="motion-element">
+          <Features />
+        </div>
+        <div id="how-it-works-section" className="motion-element">
+          <HowItWorks />
+        </div>
+        <div id="cta-section" className="motion-element">
+          <CTA />
+        </div>
+        <Footer />
       </div>
-      <div id="features-section" className="motion-element">
-        <Features />
-      </div>
-      <div id="how-it-works-section" className="motion-element">
-        <HowItWorks />
-      </div>
-      <div id="cta-section" className="motion-element">
-        <CTA />
-      </div>
-      <Footer />
-    </div>
+    </MobileOptimizer>
   );
 };
 
@@ -152,4 +161,4 @@ const LandingPage: React.FC = () => {
   );
 };
 
-export default LandingPage; 
+export default LandingPage;

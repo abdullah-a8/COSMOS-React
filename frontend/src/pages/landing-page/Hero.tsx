@@ -5,6 +5,7 @@ import { Button } from '../../components/ui/button';
 import { Bot, ArrowRight, Sparkles } from 'lucide-react';
 import { itemVariants } from './AnimationVariants';
 import { useAuth } from '../../hooks/useAuth.tsx';
+import cosmosLogo from '../../assets/cosmos_3d.png';
 
 const Hero: React.FC = () => {
   const { isAuthenticated } = useAuth({ refreshInterval: 0 });
@@ -83,9 +84,20 @@ const Hero: React.FC = () => {
               whileHover={{ scale: 1.1, rotate: 5 }}
               transition={{ type: "spring", stiffness: 300, damping: 10 }}
             >
-              <div className="absolute inset-0 bg-primary/30 rounded-full blur-3xl"></div>
-              <div className="relative flex items-center justify-center w-full h-full bg-gradient-to-br from-primary/80 to-purple-700/80 rounded-full shadow-xl">
-                <Bot className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-primary-foreground" />
+              {/* Outer glow effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/30 rounded-full blur-3xl"></div>
+              
+              {/* 3D-looking container with shadows and highlights */}
+              <div className="relative flex items-center justify-center w-full h-full rounded-full shadow-xl overflow-hidden"
+                   style={{
+                     background: "linear-gradient(135deg, rgba(124, 58, 237, 0.5) 0%, rgba(139, 92, 246, 0.7) 40%, rgba(167, 139, 250, 0.65) 70%, rgba(192, 132, 252, 0.55) 100%)",
+                     boxShadow: "inset -4px -4px 8px rgba(0, 0, 0, 0.3), inset 4px 4px 12px rgba(255, 255, 255, 0.15)"
+                   }}>
+                {/* Inner highlight for 3D effect */}
+                <div className="absolute top-0 left-0 right-0 h-1/3 bg-gradient-to-b from-white/20 to-transparent rounded-t-full"></div>
+                
+                <img src={cosmosLogo} alt="COSMOS 3D Logo" className="w-full h-full object-contain p-2 relative z-10" 
+                     style={{ filter: "drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.3))" }} />
               </div>
               
               {/* Add sparkles effect around the icon */}
