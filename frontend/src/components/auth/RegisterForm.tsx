@@ -8,6 +8,9 @@ interface RegisterFormProps {
   onError: (message: string) => void;
 }
 
+// Email validation regex
+const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
 // Animation variants for staggered animations
 const formVariants = {
   hidden: { opacity: 0 },
@@ -76,6 +79,11 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onError }) => {
     calculatePasswordStrength(password);
   }, [password]);
 
+  // Validate email function
+  const validateEmail = (email: string): boolean => {
+    return EMAIL_REGEX.test(email);
+  };
+
   // Calculate password strength on a scale of 0-4
   const calculatePasswordStrength = (pass: string) => {
     if (!pass) {
@@ -130,6 +138,12 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onError }) => {
     // Form validation
     if (!email || !password || !confirmPassword || !inviteCode || !displayName) {
       onError('All fields are required');
+      return;
+    }
+    
+    // Email validation
+    if (!validateEmail(email)) {
+      onError('Please enter a valid email address (e.g., name@example.com)');
       return;
     }
     
@@ -280,6 +294,8 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onError }) => {
             onChange={(e) => setEmail(e.target.value)}
             disabled={isLoading}
             required
+            pattern="[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}"
+            title="Please enter a valid email address (e.g., name@example.com)"
             placeholder="name@example.com"
             className="w-full px-4 py-3 bg-black/50 border border-white/20 focus:border-purple-500/60 hover:border-purple-500/40 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-purple-500/20 disabled:opacity-50 transition-all duration-200 rounded-lg"
           />
