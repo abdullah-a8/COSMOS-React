@@ -4,9 +4,11 @@ import { motion, useInView } from 'framer-motion';
 import { Button } from '../../components/ui/button';
 import { ArrowRight, Star, Sparkles, Rocket } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth.tsx';
+import { useDevice } from '../../hooks/useDevice';
 
 const CTA: React.FC = () => {
   const { isAuthenticated } = useAuth({ refreshInterval: 0 });
+  const { isMobile } = useDevice();
   const ctaRef = useRef<HTMLDivElement>(null);
   const isInView = useInView(ctaRef, { once: false, amount: 0.3, margin: "100px" });
   
@@ -21,13 +23,15 @@ const CTA: React.FC = () => {
   
   return (
     <section ref={ctaRef} className="py-20 md:py-32 px-4 md:px-0 relative">
-      {/* Background glow effect */}
-      <motion.div 
-        className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40rem] h-[40rem] rounded-full bg-primary/10 blur-[120px]"
-        initial={{ opacity: 0 }}
-        animate={isInView ? { opacity: 0.6 } : { opacity: 0 }}
-        transition={{ duration: 1.5 }}
-      />
+      {/* Background glow effect - only on desktop */}
+      {!isMobile && (
+        <motion.div 
+          className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40rem] h-[40rem] rounded-full bg-primary/10 blur-[120px]"
+          initial={{ opacity: 0 }}
+          animate={isInView ? { opacity: 0.6 } : { opacity: 0 }}
+          transition={{ duration: 1.5 }}
+        />
+      )}
       
       <div className="container mx-auto relative z-10">
         <motion.div 
@@ -41,77 +45,79 @@ const CTA: React.FC = () => {
             duration: 0.8, 
             delay: 0.1
           }}
-          whileHover={{ 
+          whileHover={!isMobile ? { 
             y: -5,
             transition: { type: "spring", stiffness: 150, damping: 15 }
-          }}
+          } : {}}
         >
-          {/* Background effects */}
-          <div className="absolute inset-0 z-0">
-            {/* Enhanced gradient effects */}
-            <div className="absolute top-0 right-0 w-80 h-80 bg-primary/20 rounded-full filter blur-3xl opacity-60">
-              <motion.div 
-                className="w-full h-full rounded-full bg-primary/30"
-                animate={{
-                  scale: [1, 1.2, 1],
-                  opacity: [0.3, 0.5, 0.3],
-                }}
-                transition={{ 
-                  duration: 6, 
-                  repeat: Infinity, 
-                  ease: "easeInOut" 
-                }}
-              />
+          {/* Background effects - only on desktop */}
+          {!isMobile && (
+            <div className="absolute inset-0 z-0">
+              {/* Enhanced gradient effects */}
+              <div className="absolute top-0 right-0 w-80 h-80 bg-primary/20 rounded-full filter blur-3xl opacity-60">
+                <motion.div 
+                  className="w-full h-full rounded-full bg-primary/30"
+                  animate={{
+                    scale: [1, 1.2, 1],
+                    opacity: [0.3, 0.5, 0.3],
+                  }}
+                  transition={{ 
+                    duration: 6, 
+                    repeat: Infinity, 
+                    ease: "easeInOut" 
+                  }}
+                />
+              </div>
+              <div className="absolute bottom-0 left-0 w-80 h-80 bg-blue-600/20 rounded-full filter blur-3xl opacity-60">
+                <motion.div 
+                  className="w-full h-full rounded-full bg-blue-600/30"
+                  animate={{
+                    scale: [1, 1.3, 1],
+                    opacity: [0.3, 0.5, 0.3],
+                  }}
+                  transition={{ 
+                    duration: 8, 
+                    repeat: Infinity, 
+                    ease: "easeInOut",
+                    delay: 1
+                  }}
+                />
+              </div>
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(90,60,170,0.18),transparent_70%)]"></div>
+              
+              {/* Animated stars */}
+              {starPositions.map((pos, index) => (
+                <motion.div
+                  key={index}
+                  className={`absolute ${pos.size} text-white/40`}
+                  style={{ top: pos.top, left: pos.left }}
+                  initial={{ opacity: 0, scale: 0 }}
+                  animate={isInView ? { 
+                    opacity: [0.4, 0.8, 0.4],
+                    scale: [0.8, 1.2, 0.8],
+                    rotate: [0, 45, 0]
+                  } : { opacity: 0, scale: 0 }}
+                  transition={{ 
+                    duration: 4, 
+                    repeat: Infinity, 
+                    delay: pos.delay,
+                    ease: "easeInOut" 
+                  }}
+                >
+                  <Star fill="currentColor" />
+                </motion.div>
+              ))}
             </div>
-            <div className="absolute bottom-0 left-0 w-80 h-80 bg-blue-600/20 rounded-full filter blur-3xl opacity-60">
-              <motion.div 
-                className="w-full h-full rounded-full bg-blue-600/30"
-                animate={{
-                  scale: [1, 1.3, 1],
-                  opacity: [0.3, 0.5, 0.3],
-                }}
-                transition={{ 
-                  duration: 8, 
-                  repeat: Infinity, 
-                  ease: "easeInOut",
-                  delay: 1
-                }}
-              />
-            </div>
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(90,60,170,0.18),transparent_70%)]"></div>
-            
-            {/* Animated stars */}
-            {starPositions.map((pos, index) => (
-              <motion.div
-                key={index}
-                className={`absolute ${pos.size} text-white/40`}
-                style={{ top: pos.top, left: pos.left }}
-                initial={{ opacity: 0, scale: 0 }}
-                animate={isInView ? { 
-                  opacity: [0.4, 0.8, 0.4],
-                  scale: [0.8, 1.2, 0.8],
-                  rotate: [0, 45, 0]
-                } : { opacity: 0, scale: 0 }}
-                transition={{ 
-                  duration: 4, 
-                  repeat: Infinity, 
-                  delay: pos.delay,
-                  ease: "easeInOut" 
-                }}
-              >
-                <Star fill="currentColor" />
-              </motion.div>
-            ))}
-          </div>
+          )}
           
           <div className="relative z-10 text-center">
             {/* Title with animated icon */}
             <div className="flex items-center justify-center gap-3 mb-6">
               <motion.div
                 className="p-2 bg-gradient-to-r from-primary/80 to-blue-600/80 rounded-full"
-                animate={{
+                animate={!isMobile ? {
                   y: [0, -5, 0],
-                }}
+                } : {}}
                 transition={{
                   duration: 2,
                   repeat: Infinity,

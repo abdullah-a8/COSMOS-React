@@ -6,9 +6,11 @@ import { Bot, ArrowRight, Sparkles } from 'lucide-react';
 import { itemVariants } from './AnimationVariants';
 import { useAuth } from '../../hooks/useAuth.tsx';
 import cosmosLogo from '../../assets/cosmos_3d.png';
+import { useDevice } from '../../hooks/useDevice';
 
 const Hero: React.FC = () => {
   const { isAuthenticated } = useAuth({ refreshInterval: 0 });
+  const { isMobile } = useDevice();
   const heroRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const controls = useAnimation();
@@ -64,9 +66,13 @@ const Hero: React.FC = () => {
       {/* Enhanced gradient background */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(93,63,211,0.25),transparent_60%)] opacity-80"></div>
       
-      {/* Animated gradient orbs */}
-      <div className="absolute top-1/4 left-1/4 w-32 sm:w-64 h-32 sm:h-64 rounded-full bg-purple-600/10 blur-3xl animate-pulse"></div>
-      <div className="absolute bottom-1/4 right-1/4 w-48 sm:w-96 h-48 sm:h-96 rounded-full bg-blue-600/10 blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+      {/* Animated gradient orbs - only show on desktop */}
+      {!isMobile && (
+        <>
+          <div className="absolute top-1/4 left-1/4 w-32 sm:w-64 h-32 sm:h-64 rounded-full bg-purple-600/10 blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-1/4 right-1/4 w-48 sm:w-96 h-48 sm:h-96 rounded-full bg-blue-600/10 blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+        </>
+      )}
       
       <div className="container mx-auto relative z-10">
         <AnimatePresence>
@@ -80,12 +86,14 @@ const Hero: React.FC = () => {
           >
             <motion.div 
               variants={itemVariants} 
-              className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 mb-6 relative"
-              whileHover={{ scale: 1.1, rotate: 5 }}
+              className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 mb-6 relative cosmos-logo-container"
+              whileHover={!isMobile ? { scale: 1.1, rotate: 5 } : {}}
               transition={{ type: "spring", stiffness: 300, damping: 10 }}
             >
-              {/* Outer glow effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/30 rounded-full blur-3xl"></div>
+              {/* Outer glow effect - only on desktop */}
+              {!isMobile ? (
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/30 rounded-full blur-3xl"></div>
+              ) : null}
               
               {/* 3D-looking container with shadows and highlights */}
               <div className="relative flex items-center justify-center w-full h-full rounded-full shadow-xl overflow-hidden"
@@ -96,32 +104,41 @@ const Hero: React.FC = () => {
                 {/* Inner highlight for 3D effect */}
                 <div className="absolute top-0 left-0 right-0 h-1/3 bg-gradient-to-b from-white/20 to-transparent rounded-t-full"></div>
                 
-                <img src={cosmosLogo} alt="COSMOS 3D Logo" className="w-full h-full object-contain p-2 relative z-10" 
-                     style={{ filter: "drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.3))" }} />
-              </div>
-              
-              {/* Add sparkles effect around the icon */}
-              <div className="absolute -inset-1">
-                <motion.div
-                  animate={{
-                    scale: [1, 1.1, 1],
-                    opacity: [0.5, 0.8, 0.5],
-                  }}
-                  transition={{
-                    duration: 3,
-                    repeat: Infinity,
-                    ease: "easeInOut"
-                  }}
-                  className="w-full h-full rounded-full bg-gradient-to-r from-primary/20 to-blue-500/20 blur-md"
+                {/* Always display the logo image on all devices */}
+                <img 
+                  src={cosmosLogo} 
+                  alt="COSMOS 3D Logo" 
+                  className="w-full h-full object-contain p-2 relative z-10" 
+                  style={{ filter: "drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.3))" }} 
                 />
               </div>
               
-              {/* Subtle rotating ring */}
-              <motion.div 
-                className="absolute -inset-3 border border-primary/20 rounded-full"
-                animate={{ rotate: 360 }}
-                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-              />
+              {/* Add sparkles effect around the icon - only on desktop */}
+              {!isMobile && (
+                <div className="absolute -inset-1">
+                  <motion.div
+                    animate={{
+                      scale: [1, 1.1, 1],
+                      opacity: [0.5, 0.8, 0.5],
+                    }}
+                    transition={{
+                      duration: 3,
+                      repeat: Infinity,
+                      ease: "easeInOut"
+                    }}
+                    className="w-full h-full rounded-full bg-gradient-to-r from-primary/20 to-blue-500/20 blur-md"
+                  />
+                </div>
+              )}
+              
+              {/* Subtle rotating ring - only on desktop */}
+              {!isMobile && (
+                <motion.div 
+                  className="absolute -inset-3 border border-primary/20 rounded-full"
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                />
+              )}
             </motion.div>
             
             <motion.h1 

@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '../../components/ui/button';
 import { Menu, X, Star, Sparkles, Globe, User } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth.tsx';
+import { useDevice } from '../../hooks/useDevice';
 
 interface NavItemProps {
   to: string;
@@ -49,6 +50,7 @@ const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const { isAuthenticated } = useAuth({ refreshInterval: 0 });
+  const { isMobile } = useDevice();
 
   // Simple scroll detection - no complex transforms that could cause issues
   useEffect(() => {
@@ -64,6 +66,15 @@ const Header: React.FC = () => {
       window.removeEventListener('scroll', handleScroll);
     };
   }, [scrolled]);
+  
+  // Apply glassmorphism style consistently
+  const glassmorphismStyle = {
+    WebkitBackdropFilter: scrolled ? "blur(16px)" : "blur(0px)", // For Safari
+    backdropFilter: scrolled ? "blur(16px)" : "blur(0px)",
+    background: scrolled 
+      ? "rgba(9, 6, 27, 0.7)" 
+      : "rgba(9, 6, 27, 0.1)"
+  };
   
   return (
     <motion.header 
@@ -82,69 +93,75 @@ const Header: React.FC = () => {
       <motion.div 
         className={`relative container mx-auto flex items-center justify-between rounded-xl overflow-hidden ${
           scrolled ? 'border border-purple-500/20' : 'border-none'
-        } shadow-[0_8px_32px_rgba(147,51,234,0.15)] backdrop-blur-xl`}
+        } shadow-[0_8px_32px_rgba(147,51,234,0.15)]`}
         initial={{ 
           background: "rgba(9, 6, 27, 0.1)", 
           y: 0 
         }}
         animate={{ 
           background: scrolled ? "rgba(9, 6, 27, 0.7)" : "rgba(9, 6, 27, 0.1)",
-          y: 0,
-          backdropFilter: scrolled ? "blur(16px)" : "blur(0px)"
+          y: 0
         }}
         transition={{ duration: 0.4 }}
-        style={{
-          WebkitBackdropFilter: scrolled ? "blur(16px)" : "blur(0px)", // For Safari
-        }}
+        style={glassmorphismStyle}
+        id="navbar-container"
       >
-        {/* Purple glow overlay effect */}
-        <div className="absolute inset-0 overflow-hidden rounded-xl opacity-20 pointer-events-none">
-          <div className="absolute -top-8 -left-8 w-32 h-32 bg-purple-500/40 rounded-full filter blur-xl"></div>
-          <div className="absolute -bottom-8 -right-8 w-32 h-32 bg-indigo-500/40 rounded-full filter blur-xl"></div>
-          {scrolled && (
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-transparent to-indigo-500/5"></div>
-          )}
-        </div>
+        {/* Purple glow overlay effect - only show on desktop */}
+        {!isMobile && (
+          <div className="absolute inset-0 overflow-hidden rounded-xl opacity-20 pointer-events-none">
+            <div className="absolute -top-8 -left-8 w-32 h-32 bg-purple-500/40 rounded-full filter blur-xl"></div>
+            <div className="absolute -bottom-8 -right-8 w-32 h-32 bg-indigo-500/40 rounded-full filter blur-xl"></div>
+            {scrolled && (
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-transparent to-indigo-500/5"></div>
+            )}
+          </div>
+        )}
         
         {/* Content */}
         <Link to="/" className="flex items-center space-x-2 z-20 group relative">
           <motion.div
             className="relative"
-            whileHover={{ rotate: 10, scale: 1.1 }}
+            whileHover={!isMobile ? { rotate: 10, scale: 1.1 } : {}}
             transition={{ type: "spring", stiffness: 400, damping: 10 }}
           >
-            <motion.div
-              className="absolute inset-0 bg-primary/30 rounded-full blur-lg"
-              animate={{
-                scale: [1, 1.2, 1],
-                opacity: [0.3, 0.5, 0.3],
-              }}
-              transition={{
-                duration: 3, 
-                repeat: Infinity,
-                ease: "easeInOut"
-              }}
-            />
+            {/* Background glow - only show on desktop */}
+            {!isMobile && (
+              <motion.div
+                className="absolute inset-0 bg-primary/30 rounded-full blur-lg"
+                animate={{
+                  scale: [1, 1.2, 1],
+                  opacity: [0.3, 0.5, 0.3],
+                }}
+                transition={{
+                  duration: 3, 
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
+              />
+            )}
             <motion.img 
               src="/cosmos_app.png" 
               alt="COSMOS" 
               className="h-8 w-8 md:h-10 md:w-10 relative"
             />
-            <motion.div
-              className="absolute -top-1 -right-1 text-primary"
-              animate={{
-                rotate: [0, 10, 0, -10, 0],
-                scale: [1, 1.1, 1],
-              }}
-              transition={{
-                duration: 5, 
-                repeat: Infinity,
-                ease: "easeInOut",
-                times: [0, 0.2, 0.5, 0.8, 1]
-              }}
-            >
-              <Sparkles size={12} />
-            </motion.div>
+            {/* Sparkles - only show on desktop */}
+            {!isMobile && (
+              <motion.div
+                className="absolute -top-1 -right-1 text-primary"
+                animate={{
+                  rotate: [0, 10, 0, -10, 0],
+                  scale: [1, 1.1, 1],
+                }}
+                transition={{
+                  duration: 5, 
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                  times: [0, 0.2, 0.5, 0.8, 1]
+                }}
+              >
+                <Sparkles size={12} />
+              </motion.div>
+            )}
           </motion.div>
           
           <div className="flex flex-col items-start">
@@ -245,6 +262,10 @@ const Header: React.FC = () => {
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3 }}
             className="md:hidden fixed top-16 left-3 right-3 sm:left-4 sm:right-4 rounded-xl overflow-hidden z-50 bg-black/70 backdrop-blur-xl border border-purple-500/20 shadow-[0_8px_32px_rgba(147,51,234,0.15)]"
+            style={{
+              WebkitBackdropFilter: "blur(16px)",
+              backdropFilter: "blur(16px)"
+            }}
           >
             <div className="flex flex-col p-4 space-y-3 relative z-10">
               <Link to="#features-section" className="px-4 py-2 hover:bg-purple-500/10 rounded-lg transition-colors" 
