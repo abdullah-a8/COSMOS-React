@@ -268,23 +268,25 @@ const Header: React.FC = () => {
             }}
           >
             <div className="flex flex-col p-4 space-y-3 relative z-10">
-              <Link to="#features-section" className="px-4 py-2 hover:bg-purple-500/10 rounded-lg transition-colors" 
-                onClick={(e) => {
-                  e.preventDefault();
-                  document.getElementById('features-section')?.scrollIntoView({ behavior: 'smooth' });
+              <a
+                href="#features-section"
+                className="w-full text-left px-4 py-3 hover:bg-purple-500/10 rounded-lg transition-colors flex items-center" 
+                onClick={() => {
                   setIsMenuOpen(false);
-                }}>
-                Features
-              </Link>
-              <Link to="#how-it-works-section" className="px-4 py-2 hover:bg-purple-500/10 rounded-lg transition-colors" 
-                onClick={(e) => {
-                  e.preventDefault();
-                  document.getElementById('how-it-works-section')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+              >
+                <span className="text-base">Features</span>
+              </a>
+              <a
+                href="#how-it-works-section"
+                className="w-full text-left px-4 py-3 hover:bg-purple-500/10 rounded-lg transition-colors flex items-center" 
+                onClick={() => {
                   setIsMenuOpen(false);
-                }}>
-                How It Works
-              </Link>
-              <Link to="/pricing" className="px-4 py-2 hover:bg-purple-500/10 rounded-lg transition-colors" onClick={() => setIsMenuOpen(false)}>
+                }}
+              >
+                <span className="text-base">How It Works</span>
+              </a>
+              <Link to="/pricing" className="px-4 py-3 hover:bg-purple-500/10 rounded-lg transition-colors" onClick={() => setIsMenuOpen(false)}>
                 Pricing
               </Link>
               <div className="pt-2 flex flex-col gap-2 border-t border-purple-500/20">

@@ -5,7 +5,7 @@ const HowItWorks: React.FC = () => {
   const howItWorksRef = useRef<HTMLDivElement>(null);
   
   return (
-    <section ref={howItWorksRef} className="py-16 sm:py-20 md:py-32 px-4 md:px-0 relative">
+    <section ref={howItWorksRef} id="how-it-works-section" className="py-16 sm:py-20 md:py-32 px-4 md:px-0 relative">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(93,63,211,0.15),transparent_70%)]"></div>
       <div className="container mx-auto relative z-10">
         <div className="text-center mb-10 sm:mb-16">

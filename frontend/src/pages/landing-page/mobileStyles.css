@@ -6,6 +6,17 @@
     opacity: 1 !important;
   }
   
+  /* Fix for smooth scrolling issues on iOS Safari */
+  html {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Fix for scroll into view on mobile */
+  #features-section, 
+  #how-it-works-section {
+    scroll-margin-top: 90px; /* Add margin to account for fixed header */
+  }
+  
   /* Completely disable all animations on mobile EXCEPT for sparkles */
   .motion-element,
   [data-framer-motion],
@@ -30,6 +41,32 @@
     display: block !important;
     visibility: visible !important;
     opacity: 1 !important;
+  }
+  
+  /* Improve touch interactions */
+  button, 
+  a, 
+  [role="button"] {
+    cursor: pointer;
+    -webkit-tap-highlight-color: rgba(147, 51, 234, 0.2) !important;
+    touch-action: manipulation;
+    user-select: none;
+    min-height: 44px; /* Apple's recommended minimum size */
+  }
+  
+  /* Enhanced mobile menu buttons - larger tap targets */
+  .md\\:hidden button {
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+  }
+  
+  /* Add active state for touch feedback */
+  button:active,
+  a:active,
+  [role="button"]:active {
+    opacity: 0.8;
+    transform: scale(0.98) !important;
+    transition: transform 0.1s !important;
   }
   
   /* Simplify shadows and effects for better performance */

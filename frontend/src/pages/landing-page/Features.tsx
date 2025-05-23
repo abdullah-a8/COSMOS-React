@@ -103,7 +103,7 @@ const Features: React.FC = () => {
   ];
   
   return (
-    <section id="features" ref={featuresRef} className="py-16 sm:py-20 md:py-32 px-4 md:px-0 relative">
+    <section id="features-section" ref={featuresRef} className="py-16 sm:py-20 md:py-32 px-4 md:px-0 relative">
       {/* Enhanced background effects */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(93,63,211,0.18),transparent_70%)]"></div>
       

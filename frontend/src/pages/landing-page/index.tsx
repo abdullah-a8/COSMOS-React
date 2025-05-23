@@ -111,9 +111,11 @@ const LandingPageContent: React.FC = () => {
           <Hero />
         </div>
         <div id="features-section" className="motion-element">
+          <a id="features-anchor" aria-hidden="true"></a>
           <Features />
         </div>
         <div id="how-it-works-section" className="motion-element">
+          <a id="how-it-works-anchor" aria-hidden="true"></a>
           <HowItWorks />
         </div>
         <div id="cta-section" className="motion-element">
