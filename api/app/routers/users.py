@@ -4,6 +4,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, or_, delete
 from typing import Optional, Dict, Any, Tuple, List
 import logging
+from pydantic import ValidationError
+
+# Setup logger
+logger = logging.getLogger(__name__)
 
 from ..db.session import get_db
 from ..services.user_service import UserService
@@ -18,6 +22,8 @@ from ..core.auth_service import (
 )
 from ..core.config import settings
 from ..core.csrf import CSRF_TOKEN_NAME
+from ..utils.input_validator import LoginForm, RegisterForm, UpdateProfileForm
+from ..utils.error_handlers import format_validation_error
 
 router = APIRouter()
 
@@ -55,19 +61,35 @@ async def register_user(
     db: AsyncSession = Depends(get_db)
 ) -> UserResponse:
     """Register a new user with an invite code."""
+    # First, validate the incoming data using our validation model
+    try:
+        valid_data = RegisterForm(
+            email=user_data.email,
+            password=user_data.password,
+            display_name=user_data.display_name,
+            invite_code=user_data.invite_code,
+            terms_accepted=user_data.terms_accepted
+        )
+    except ValidationError as e:
+        error_response = format_validation_error(e)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=error_response
+        )
+    
     user_service = UserService(db)
     
     # Log terms acceptance
     logger = logging.getLogger(__name__)
-    logger.info(f"User registration with terms accepted: {user_data.email}")
+    logger.info(f"User registration with terms accepted: {valid_data.email}")
     
     # Create user with invite code
     user, error = await user_service.create_user_with_invite(
-        email=user_data.email,
-        password=user_data.password,
-        invite_code=user_data.invite_code,
-        display_name=user_data.display_name,
-        terms_accepted=user_data.terms_accepted
+        email=valid_data.email,
+        password=valid_data.password,
+        invite_code=valid_data.invite_code,
+        display_name=valid_data.display_name,
+        terms_accepted=valid_data.terms_accepted
     )
     
     if not user:
@@ -91,6 +113,21 @@ async def register_user(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="You must accept the Terms of Service and Privacy Policy"
             )
+        elif error == "invalid_email":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Please enter a valid email address"
+            )
+        elif error == "invalid_password":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Password does not meet security requirements"
+            )
+        elif error == "invalid_display_name":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Display name contains invalid characters"
+            )
         else:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -105,15 +142,35 @@ async def login_user(
     db: AsyncSession = Depends(get_db)
 ):
     """Login a user and return a session token."""
+    # First, validate the incoming data using our validation model
+    try:
+        valid_data = LoginForm(
+            email=login_data.email,
+            password=login_data.password
+        )
+    except ValidationError as e:
+        error_response = format_validation_error(e)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=error_response
+        )
+    
     user_service = UserService(db)
     
     # Authenticate the user
-    user = await user_service.authenticate_user(login_data.email, login_data.password)
+    user = await user_service.authenticate_user(valid_data.email, valid_data.password)
     
     if not user:
+        # More user-friendly authentication error
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password"
+            detail={
+                "message": "The email or password you entered is incorrect. Please try again.",
+                "fields": {
+                    "email": "The email or password you entered is incorrect.",
+                    "password": "The email or password you entered is incorrect."
+                }
+            }
         )
     
     # Properly check if user is admin based on email
@@ -187,10 +244,22 @@ async def update_display_name(
             detail="Not authenticated"
         )
     
+    # Validate the display name
+    try:
+        valid_data = UpdateProfileForm(
+            display_name=display_name_data.display_name
+        )
+    except ValidationError as e:
+        error_response = format_validation_error(e)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=error_response
+        )
+    
     _, user = await get_current_user_from_session(session_id, db)
     
     # Update display name
-    updated_user = await UserService(db).update_display_name(user.id, display_name_data.display_name)
+    updated_user = await UserService(db).update_display_name(user.id, valid_data.display_name)
     
     if not updated_user:
         raise HTTPException(
@@ -207,77 +276,44 @@ async def logout_user(
     db: AsyncSession = Depends(get_db)
 ) -> JSONResponse:
     """Logout the current user by invalidating their session."""
-    logger = logging.getLogger(__name__)
+    if not session_id:
+        return JSONResponse(
+            content={"status": "success", "message": "Already logged out"},
+            status_code=status.HTTP_200_OK
+        )
     
     try:
-        # 1. Delete session from database if exists
-        if session_id:
-            try:
-                # First try direct delete for better performance
-                delete_stmt = delete(Session).where(Session.id == session_id)
-                await db.execute(delete_stmt)
-                await db.commit()
-                logger.info(f"Session {session_id[:8]}... successfully deleted")
-            except Exception as e:
-                logger.error(f"Error deleting session: {e}")
-                # Continue anyway - we'll still clear cookies
-        
-        # 2. Prepare response with cleared cookies
-        response = JSONResponse(
-            content={"message": "Successfully logged out."},
-            status_code=200
-        )
-        
-        # 3. Clear cookies with multiple paths for reliability
-        # Main session cookie
-        response.delete_cookie(
-            key=SESSION_TOKEN_NAME,
-            path="/",
-            domain=None,
-            secure=False,
-            httponly=True
-        )
-        
-        # Also clear any other potential auth cookies
-        for cookie_name in ["cosmos_auth", "cosmos_token", "csrf_token"]:
-            response.delete_cookie(
-                key=cookie_name,
-                path="/",
-                domain=None,
-                secure=False,
-                httponly=True
-            )
-            
-            # Also try with API paths
-            response.delete_cookie(
-                key=cookie_name,
-                path="/api",
-                domain=None,
-                secure=False,
-                httponly=True
-            )
-            
-            response.delete_cookie(
-                key=cookie_name,
-                path="/api/v1",
-                domain=None,
-                secure=False,
-                httponly=True
-            )
-        
-        # 4. Add cache control headers to prevent page caching issues
-        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-        response.headers["Pragma"] = "no-cache"
-        response.headers["Expires"] = "0"
-        
-        return response
-        
+        # Delete the session if it exists
+        delete_stmt = delete(Session).where(Session.id == session_id)
+        await db.execute(delete_stmt)
+        await db.commit()
     except Exception as e:
-        logger.error(f"Error during logout: {e}")
-        return JSONResponse(
-            content={"message": "Error during logout."},
-            status_code=500
-        )
+        logger.error(f"Error during logout: {str(e)}")
+        # Continue with logout even if DB delete fails
+    
+    # Create a response with cleared cookie
+    response = JSONResponse(
+        content={"status": "success", "message": "Logged out successfully"},
+        status_code=status.HTTP_200_OK
+    )
+    
+    # Clear the session cookie
+    response.delete_cookie(
+        key=SESSION_TOKEN_NAME,
+        path="/",
+        secure=settings.ENVIRONMENT.lower() == "production",
+        httponly=True
+    )
+    
+    # Clear CSRF cookie if it exists
+    response.delete_cookie(
+        key=CSRF_TOKEN_NAME,
+        path="/",
+        secure=settings.ENVIRONMENT.lower() == "production",
+        httponly=True
+    )
+    
+    return response
 
 @router.post("/invite", status_code=status.HTTP_201_CREATED)
 async def create_invite_code(

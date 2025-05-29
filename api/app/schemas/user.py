@@ -83,6 +83,14 @@ class UserResponse(BaseModel):
 class UpdateDisplayName(BaseModel):
     """Schema for updating display name."""
     display_name: str = Field(..., min_length=3, max_length=100)
+    
+    @field_validator('display_name')
+    @classmethod
+    def validate_display_name_not_empty(cls, v):
+        """Validate that display name is not empty."""
+        if v.strip() == "":
+            raise ValueError('Display name cannot be blank')
+        return v
 
 class CreateInviteCode(BaseModel):
     """Schema for creating an invite code."""

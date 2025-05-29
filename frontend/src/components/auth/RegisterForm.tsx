@@ -239,14 +239,51 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onError }) => {
       const data = await response.json();
       
       if (!response.ok) {
-        // Special handling for the compromised password error
-        if (data.detail && data.detail.includes("data breach")) {
+        // Handle structured error format
+        if (data.detail && typeof data.detail === 'object') {
+          if (data.detail.fields) {
+            const fieldErrors = data.detail.fields;
+            
+            // Check specific fields in order of priority
+            if (fieldErrors.password) {
+              setPassword(''); // Clear the password for security
+              setConfirmPassword(''); // Clear confirmation too
+              onError(fieldErrors.password);
+              return;
+            } else if (fieldErrors.email) {
+              onError(fieldErrors.email);
+              return;
+            } else if (fieldErrors.display_name) {
+              onError(fieldErrors.display_name);
+              return; 
+            } else if (fieldErrors.invite_code) {
+              onError(fieldErrors.invite_code);
+              return;
+            } else if (fieldErrors.terms_accepted) {
+              onError(fieldErrors.terms_accepted);
+              return;
+            } else {
+              // Just take the first field error if there are multiple
+              const firstField = Object.keys(fieldErrors)[0];
+              onError(fieldErrors[firstField] || data.detail.message || 'Registration failed');
+              return;
+            }
+          } else if (data.detail.message) {
+            // Use the general message if no field-specific errors
+            onError(data.detail.message);
+            return;
+          }
+        }
+        
+        // Special handling for the compromised password error (legacy format)
+        if (typeof data.detail === 'string' && data.detail.includes("data breach")) {
           setPassword(''); // Clear the password for security
           setConfirmPassword(''); // Clear confirmation too
           onError('This password has appeared in a data breach. Please choose a different password for security.');
           return;
         }
         
+        // Fallback to legacy format
         onError(data.detail || 'Registration failed');
         return;
       }

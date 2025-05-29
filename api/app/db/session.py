@@ -6,6 +6,7 @@ import os
 import logging
 from typing import AsyncGenerator
 import urllib.parse
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -95,4 +96,76 @@ async def init_models():
     async with engine.begin() as conn:
         # Create tables if they don't exist
         await conn.run_sync(Base.metadata.create_all)
-    logger.info("Database tables initialized") 
+    logger.info("Database tables initialized")
+
+# SQL Injection protection utilities
+
+# Common SQL reserved keywords
+RESERVED_KEYWORDS = {
+    'ALL', 'ALTER', 'AND', 'ANY', 'AS', 'ASC', 'BETWEEN', 'BY', 'CASE', 'CHECK', 
+    'COLUMN', 'COMMIT', 'CONSTRAINT', 'CREATE', 'CROSS', 'CURRENT', 'DATABASE', 
+    'DEFAULT', 'DELETE', 'DESC', 'DISTINCT', 'DROP', 'ELSE', 'EXCEPT', 'EXISTS', 
+    'FOREIGN', 'FROM', 'FULL', 'GRANT', 'GROUP', 'HAVING', 'IN', 'INDEX', 'INNER', 
+    'INSERT', 'INTERSECT', 'INTO', 'IS', 'JOIN', 'KEY', 'LEFT', 'LIKE', 'LIMIT', 
+    'NOT', 'NULL', 'ON', 'OR', 'ORDER', 'OUTER', 'PRIMARY', 'REFERENCES', 'RIGHT', 
+    'ROLLBACK', 'SELECT', 'SET', 'TABLE', 'THEN', 'TO', 'TRANSACTION', 'UNION', 
+    'UNIQUE', 'UPDATE', 'USER', 'VALUES', 'VIEW', 'WHEN', 'WHERE', 'WITH'
+}
+
+def is_safe_table_name(table_name: str) -> bool:
+    """
+    Check if a table name is safe to use in SQL queries.
+    Prevents SQL injection through table names.
+    
+    Args:
+        table_name: The table name to check
+        
+    Returns:
+        bool: True if the table name is safe
+    """
+    # Table names should start with a letter followed by alphanumeric chars or underscores
+    # Total length should be 1-63 chars
+    pattern = r'^[a-zA-Z][a-zA-Z0-9_]{0,62}$'
+    if not re.match(pattern, table_name):
+        return False
+    
+    # Check if the name is a reserved keyword
+    return table_name.upper() not in RESERVED_KEYWORDS
+
+def is_safe_column_name(column_name: str) -> bool:
+    """
+    Check if a column name is safe to use in SQL queries.
+    Prevents SQL injection through column names.
+    
+    Args:
+        column_name: The column name to check
+        
+    Returns:
+        bool: True if the column name is safe
+    """
+    # Column names should start with a letter followed by alphanumeric chars or underscores
+    pattern = r'^[a-zA-Z][a-zA-Z0-9_]{0,62}$'
+    if not re.match(pattern, column_name):
+        return False
+    
+    # Check if the name is a reserved keyword
+    return column_name.upper() not in RESERVED_KEYWORDS
+
+def is_safe_schema_name(schema_name: str) -> bool:
+    """
+    Check if a schema name is safe to use in SQL queries.
+    Prevents SQL injection through schema names.
+    
+    Args:
+        schema_name: The schema name to check
+        
+    Returns:
+        bool: True if the schema name is safe
+    """
+    # Schema names should start with a letter followed by alphanumeric chars or underscores
+    pattern = r'^[a-zA-Z][a-zA-Z0-9_]{0,62}$'
+    if not re.match(pattern, schema_name):
+        return False
+    
+    # Check if the name is a reserved keyword
+    return schema_name.upper() not in RESERVED_KEYWORDS 

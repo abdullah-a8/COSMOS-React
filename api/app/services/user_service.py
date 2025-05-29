@@ -1,11 +1,12 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, and_, or_
+from sqlalchemy import select, and_, or_
 from ..models.user import User
 from ..models.auth import InviteCode, get_utc_now
 from typing import Optional, Tuple
 import logging
 import hashlib
 import aiohttp
+from ..utils.input_validator import InputValidator
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +33,29 @@ class UserService:
             If failed, User will be None and error_message will contain the reason
         """
         try:
-            # First, check if email already exists
+            # First, validate all user inputs to prevent SQL injection
+            is_valid, error = InputValidator.validate_email(email)
+            if not is_valid:
+                logger.warning(f"Invalid email format in registration attempt: {email}")
+                return None, "invalid_email"
+                
+            is_valid, error = InputValidator.validate_password(password)
+            if not is_valid:
+                logger.warning(f"Invalid password format in registration attempt for email: {email}")
+                return None, "invalid_password"
+            
+            if display_name:
+                is_valid, error = InputValidator.validate_display_name(display_name)
+                if not is_valid:
+                    logger.warning(f"Invalid display name format in registration attempt for email: {email}")
+                    return None, "invalid_display_name"
+            
+            is_valid, error = InputValidator.validate_invite_code(invite_code)
+            if not is_valid:
+                logger.warning(f"Invalid invite code format in registration attempt for email: {email}")
+                return None, "invalid_invite"
+            
+            # Next, check if email already exists
             email_check = await self.get_user_by_email(email)
             if email_check:
                 logger.warning(f"Attempt to create user with existing email: {email}")
@@ -81,6 +104,13 @@ class UserService:
     async def get_user_by_email(self, email: str) -> Optional[User]:
         """Get a user by their email address."""
         try:
+            # Validate email format first
+            is_valid, _ = InputValidator.validate_email(email)
+            if not is_valid:
+                logger.warning(f"Invalid email format in user lookup: {email}")
+                return None
+                
+            # Use parameterized query
             stmt = select(User).where(
                 and_(
                     User.email == email.lower(),
@@ -96,6 +126,12 @@ class UserService:
     async def get_user_by_id(self, user_id: int) -> Optional[User]:
         """Get a user by their ID."""
         try:
+            # Validate user_id first
+            if not isinstance(user_id, int) or user_id <= 0:
+                logger.warning(f"Invalid user ID format: {user_id}")
+                return None
+                
+            # Use parameterized query
             stmt = select(User).where(
                 and_(
                     User.id == user_id,
@@ -110,6 +146,13 @@ class UserService:
     
     async def authenticate_user(self, email: str, password: str) -> Optional[User]:
         """Authenticate a user with email and password."""
+        # Validate email format first
+        is_valid, _ = InputValidator.validate_email(email)
+        if not is_valid:
+            logger.warning(f"Invalid email format in authentication attempt: {email}")
+            return None
+            
+        # Get user securely with parameterized query
         user = await self.get_user_by_email(email)
         
         if not user:
@@ -147,6 +190,12 @@ class UserService:
     async def update_display_name(self, user_id: int, new_display_name: str) -> Optional[User]:
         """Update a user's display name."""
         try:
+            # Validate display name
+            is_valid, error = InputValidator.validate_display_name(new_display_name)
+            if not is_valid:
+                logger.warning(f"Invalid display name format for user ID {user_id}: {error}")
+                return None
+                
             user = await self.get_user_by_id(user_id)
             
             if not user:
@@ -169,6 +218,17 @@ class UserService:
         The invite code must be active, not expired, and match the email.
         """
         if not code:
+            return None
+            
+        # Validate inputs
+        is_valid, _ = InputValidator.validate_invite_code(code)
+        if not is_valid:
+            logger.warning(f"Invalid invite code format: {code}")
+            return None
+            
+        is_valid, _ = InputValidator.validate_email(email)
+        if not is_valid:
+            logger.warning(f"Invalid email format in invite code validation: {email}")
             return None
             
         # Find all active, non-expired codes for this email

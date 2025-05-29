@@ -65,6 +65,11 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ onSuccess, onError, onDisplay
     if (shouldPreventAPIRequests()) return;
     
     // Validate display name
+    if (!displayName || displayName.trim() === '') {
+      onError('Display name cannot be blank');
+      return;
+    }
+    
     if (displayName && displayName.length < 3) {
       onError('Display name must be at least 3 characters');
       return;
@@ -87,7 +92,20 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ onSuccess, onError, onDisplay
       
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.detail || 'Failed to update display name');
+        
+        // Handle new structured error format
+        if (data.detail && typeof data.detail === 'object') {
+          if (data.detail.fields && data.detail.fields.display_name) {
+            // Use specific field error for display_name
+            throw new Error(data.detail.fields.display_name);
+          } else if (data.detail.message) {
+            // Use general message if available
+            throw new Error(data.detail.message);
+          }
+        }
+        
+        // Fallback to legacy error format
+        throw new Error(typeof data.detail === 'string' ? data.detail : 'Failed to update display name');
       }
       
       const updatedUser = await response.json();

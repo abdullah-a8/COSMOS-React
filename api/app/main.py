@@ -65,6 +65,8 @@ app.add_middleware(
 # Authentication middleware
 app.add_middleware(BetaAuthMiddleware)
 
+# SQL Injection Protection middleware removed as it duplicates SQLAlchemy's protection
+
 # CSRF Protection middleware
 app.add_middleware(CSRFProtectionMiddleware)
 

@@ -116,7 +116,34 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onError }) => {
       
       if (!response.ok) {
         const data = await response.json();
-        onError(data.detail || 'Invalid email or password');
+        
+        // Handle our new structured error format
+        if (data.detail && typeof data.detail === 'object') {
+          // First check if there are field-specific errors we want to show
+          if (data.detail.fields) {
+            const fieldErrors = data.detail.fields;
+            
+            // Prioritize password errors, then email errors
+            if (fieldErrors.password) {
+              onError(fieldErrors.password);
+            } else if (fieldErrors.email) {
+              onError(fieldErrors.email);
+            } else {
+              // Just take the first field error if there are multiple
+              const firstField = Object.keys(fieldErrors)[0];
+              onError(fieldErrors[firstField] || data.detail.message || 'Invalid login information');
+            }
+          } else if (data.detail.message) {
+            // Use the general message if no field-specific errors
+            onError(data.detail.message);
+          } else {
+            // Fallback for unexpected format
+            onError('Invalid email or password');
+          }
+        } else {
+          // Handle string error messages (legacy format)
+          onError(data.detail || 'Invalid email or password');
+        }
         return;
       }
       
